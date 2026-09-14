@@ -507,7 +507,11 @@ internal fun AutoSizeValue(
         textAlign = textAlign,
         modifier = modifier,
         onTextLayout = { result ->
-            if (result.didOverflowWidth && scale > minScale) {
+            // With Ellipsis, Compose can constrain the laid-out paragraph to the available width, so
+            // didOverflowWidth stays false even though the visible line was truncated (#2171).
+            // isLineEllipsized is the authoritative signal for that case; keep the width check for
+            // overflow modes or layout implementations that still report the unconstrained width.
+            if ((result.didOverflowWidth || result.isLineEllipsized(0)) && scale > minScale) {
                 scale = maxOf(minScale, scale - 0.08f)
             }
         },
