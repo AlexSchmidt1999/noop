@@ -278,7 +278,7 @@ struct StressView: View {
                         let drawnPeak = day.timeline.filter { $0.level != nil }
                             .max { ($0.level ?? 0) < ($1.level ?? 0) }
                         if let peak = drawnPeak, let lvl = peak.level {
-                            Text("peak \(String(format: "%.1f", lvl)) · \(hourLabel(peak.hour))")
+                            Text("peak \(StressTrace.formatLevel(lvl)) · \(hourLabel(peak.hour))")
                                 .font(StrandFont.captionNumber)
                                 .foregroundStyle(StressRamp.color(lvl))
                         }
@@ -327,7 +327,7 @@ struct StressView: View {
     private func timelineTrailing(_ day: DaytimeStress.Result) -> String {
         let n = day.scored.count
         guard let mean = day.dayMean else { return String(localized: "\(n)h") }
-        return String(localized: "avg \(String(format: "%.1f", mean)) · \(n)h")
+        return String(localized: "avg \(StressTrace.formatLevel(mean)) · \(n)h")
     }
 
     /// The timeline's explanatory line, honest about WHICH reference each hour was scored against —
@@ -493,7 +493,7 @@ struct StressView: View {
             // Today's stress value, with its band as the caption.
             StatTile(
                 label: "Stress",
-                value: String(format: "%.1f", model.score),
+                value: StressTrace.formatLevel(model.score),
                 caption: String(localized: "of 3 · \(model.band.title)"),
                 accent: StressRamp.color(model.score),
                 sparkline: model.sparkValues.count > 1 ? model.sparkValues : nil,
@@ -575,7 +575,7 @@ struct StressView: View {
                 ChartCard(
                     title: "Stress · \(range.label)",
                     subtitle: String(localized: "Daily 0-3 proxy"),
-                    trailing: String(localized: "avg \(String(format: "%.1f", avg))"),
+                    trailing: String(localized: "avg \(StressTrace.formatLevel(avg))"),
                     tint: StressRamp.calm
                 ) {
                     TrendChart(
@@ -584,14 +584,14 @@ struct StressView: View {
                         valueRange: 0...3,
                         showsArea: true,
                         height: NoopMetrics.chartHeight,
-                        valueFormat: { String(format: "%.1f", $0) },
+                        valueFormat: { StressTrace.formatLevel($0) },
                         accessibilityLabel: String(localized: "Stress trend"),
                         yDomain: 0...yTop
                     )
                 } footer: {
                     ChartFooter([
-                        ("Today", String(format: "%.1f", model.score)),
-                        ("Average", String(format: "%.1f", avg)),
+                        ("Today", StressTrace.formatLevel(model.score)),
+                        ("Average", StressTrace.formatLevel(avg)),
                         ("Days", "\(points.count)"),
                     ])
                 }
@@ -686,7 +686,7 @@ private struct StressHeroGauge: View {
                 // so the score is passed straight through — no external roll state needed.
                 CountUpText(
                     value: score,
-                    format: { String(format: "%.1f", $0) },
+                    format: { StressTrace.formatLevel($0) },
                     font: StrandFont.rounded(34, weight: .bold),
                     color: .white
                 )
@@ -698,7 +698,7 @@ private struct StressHeroGauge: View {
             .allowsHitTesting(false)   // taps fall through to the vessel → splash
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Stress \(String(format: "%.1f", score)) of 3")
+        .accessibilityLabel(String(localized: "Stress \(StressTrace.formatLevel(score)) of 3"))
     }
 }
 
@@ -1121,7 +1121,7 @@ struct DaytimeLoadLine: View {
     private var accessibilitySummary: String {
         let scored = hours.compactMap { p in p.level.map { (p.hour, $0) } }
         guard !scored.isEmpty else { return String(localized: "No intraday stress data yet today.") }
-        let parts = scored.map { "\($0.0):00 \(String(format: "%.1f", $0.1))" }
+        let parts = scored.map { "\($0.0):00 \(StressTrace.formatLevel($0.1))" }
         return String(localized: "Autonomic load today: \(parts.joined(separator: ", "))")
     }
 }
@@ -1299,7 +1299,7 @@ private struct StressPreviewHarness: View {
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)],
                           alignment: .leading, spacing: NoopMetrics.gap) {
-                    StatTile(label: "Stress", value: String(format: "%.1f", score),
+                    StatTile(label: "Stress", value: StressTrace.formatLevel(score),
                              caption: "of 3 · \(band.title)", accent: StressRamp.color(score))
                     StatTile(label: "Resting HR", value: "54 bpm", accent: StrandPalette.metricRose,
                              delta: "+3 vs base", deltaColor: StrandPalette.statusWarning)
@@ -1312,9 +1312,9 @@ private struct StressPreviewHarness: View {
                 ChartCard(title: "Stress · M", subtitle: "Daily 0-3 proxy", trailing: "avg 1.5") {
                     TrendChart(points: sampleStressTrend(30), gradient: StressRamp.gradient,
                                valueRange: 0...3, showsArea: true, height: NoopMetrics.chartHeight,
-                               valueFormat: { String(format: "%.1f", $0) })
+                               valueFormat: { StressTrace.formatLevel($0) })
                 } footer: {
-                    ChartFooter([("Today", String(format: "%.1f", score)), ("Average", "1.5"), ("Days", "30")])
+                    ChartFooter([("Today", StressTrace.formatLevel(score)), ("Average", "1.5"), ("Days", "30")])
                 }
                 SegmentedPillControl(ExploreRange.allCases, selection: $range,
                                      adaptsToAvailableWidth: true) { $0.label }

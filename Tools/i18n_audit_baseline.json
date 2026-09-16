@@ -1036,10 +1036,6 @@
     ],
     [
       "Strand/Screens/StressView.swift",
-      "Stress \\(String(format: \"%.1f\", score)) of 3"
-    ],
-    [
-      "Strand/Screens/StressView.swift",
       "Today's value is your recorded daily stress score (0-3)."
     ],
     [
