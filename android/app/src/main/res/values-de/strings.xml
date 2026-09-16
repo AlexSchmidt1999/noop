@@ -2730,6 +2730,12 @@
     <string name="coach_clear_action">Löschen</string>
     <string name="coach_token_estimate">~%1$d Token</string>
     <string name="coach_token_warning">" · kann kleine Kontextfenster überschreiten"</string>
+    <string name="l10n_coach_settings_screen_customised_your_edited_instructions_frame_every_reply_bab91200">Angepasst. Deine bearbeiteten Anweisungen rahmen jede Antwort.</string>
+    <string name="l10n_coach_settings_screen_edit_how_the_coach_thinks_and_talks_takes_5104835d">Bearbeite, wie der Coach denkt und spricht. Wirkt ab deiner nächsten Nachricht.</string>
+    <string name="l10n_coach_settings_screen_collapse_coach_instructions_0933974a">Coach-Anweisungen einklappen</string>
+    <string name="l10n_coach_settings_screen_edit_coach_instructions_63a38c3a">Coach-Anweisungen bearbeiten</string>
+    <string name="coach_settings">Coach-Einstellungen</string>
+    <string name="coach_settings_subtitle">Worauf der Coach zugreifen darf, wie er antworten soll und wann er dir schreibt.</string>
     <string name="coach_morning_brief">Morgenbrief</string>
     <string name="coach_morning_brief_desc">Eine lokale Benachrichtigung mit heutiger Bereitschaft + Trainingsplan, jeden Morgen auf dem Gerät erstellt.</string>
     <string name="coach_morning_brief_off">Aus: Es wird nichts generiert oder nach Zeitplan gesendet.</string>
