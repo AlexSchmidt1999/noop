@@ -2755,4 +2755,5 @@
         <item quantity="other">最长：%1$d 天</item>
     </plurals>
     <string name="l10n_settings_screen_ai_coach_130c3eab">AI 教练</string>
+    <string name="l10n_app_changelog_a_gym_log_book_on_your_e0f00272">腕上的健身记录本、可以完全关闭的 Coach，以及一个同步手环的快捷指令</string>
 </resources>
