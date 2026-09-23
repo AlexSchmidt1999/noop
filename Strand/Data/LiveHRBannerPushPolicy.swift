@@ -15,8 +15,9 @@ import Foundation
 /// and how soon a new number reaches it, is unchanged. This is the rule Android's connection notification has
 /// followed since #216: re-post only when a rendered field changes.
 ///
-/// Pure and platform-free so `StrandTests` covers it: the controller it serves lives in the iOS app target,
-/// which no CI job compiles (`AGENTS.md`).
+/// Pure and platform-free so `StrandTests` covers it: `StrandTests` runs on macOS and cannot exercise
+/// ActivityKit, so the rule has to live outside the controller to be unit tested at all. (The controller
+/// itself IS compiled in CI, by `app-build.yml`'s `NOOPiOS` leg.)
 enum LiveHRBannerPushPolicy {
 
     /// The shortest time between two pushes, as before: well under ActivityKit's update budget.
