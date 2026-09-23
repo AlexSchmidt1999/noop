@@ -207,7 +207,16 @@ public final class FrameRouter {
                              domain: .connection)
             }
             if family == .whoop4, let cmd = parsed.cmdName {
-                if cmd.hasPrefix("GET_ADVERTISING_NAME_HARVARD") {
+                if cmd.hasPrefix("TOGGLE_GENERIC_HR_PROFILE") {
+                    // #2400: this is evidence that the strap answered opcode 14, not a read-back of the
+                    // advertising state. Preserve the raw result byte + frame so another firmware's
+                    // response can be compared without turning an acknowledgement into a false verdict.
+                    let r = Self.commandResultByte(in: frame, family: family)
+                    let rhex = r.map { String(format: "0x%02x", UInt8(truncatingIfNeeded: $0)) } ?? "none"
+                    state.append(log: "Broadcast HR: WHOOP 4 command response received "
+                                 + "resultByte=\(rhex), effect not confirmed "
+                                 + "frame=\(Self.fullFrameHex(frame))")
+                } else if cmd.hasPrefix("GET_ADVERTISING_NAME_HARVARD") {
                     if let name = Self.advertisingName(in: frame), !name.isEmpty {
                         state.advertisingName = name
                     }
