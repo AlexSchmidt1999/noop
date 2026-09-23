@@ -27,8 +27,9 @@ struct StrandiOSApp: App {
     @State private var liveActivity = LiveActivityController()
     /// The Lift Log session's own Live Activity. Separate from the live-HR one above: while a gym
     /// session is open this is the banner that matters (it carries the heart rate too), so the HR
-    /// activity is suppressed rather than stacked beside it.
-    @State private var liftActivity = LiftLiveActivityController()
+    /// activity is suppressed rather than stacked beside it. Built in `init`, where the strap log it
+    /// writes to exists.
+    @State private var liftActivity: LiftLiveActivityController
     /// The live gym session. Owned HERE, at the app root, rather than by the screen that shows it:
     /// swiping the workout sheet away must not stop the clock, silence the strap or drop the
     /// double-tap handler. See `LiftSessionController`.
@@ -90,13 +91,28 @@ struct StrandiOSApp: App {
         SyncLiveActivityController.shared.attach(to: model.live)
         // The buzz and the strap-gesture claim are injected, so the controller itself knows nothing
         // about BLE and stays testable.
-        _liftSession = StateObject(wrappedValue: LiftSessionController(
+        let liftSession = LiftSessionController(
             buzz: { [weak model] loops in
                 model?.buzz(loops: loops, gate: HapticPrefs.liftRest)
             },
             setStrapHandler: { [weak model] handler in
                 model?.strapDoubleTapOverride = handler
-            }))
+            },
+            log: { [weak model] line in
+                model?.live.append(log: AppModel.stamped(line))
+            })
+        _liftSession = StateObject(wrappedValue: liftSession)
+        _liftActivity = State(initialValue: LiftLiveActivityController(log: { [weak model] line in
+            model?.live.append(log: AppModel.stamped(line))
+        }))
+        // A gym session keeps ONE banner on the Lock Screen, its own — as the live-HR banner already
+        // stands aside for it. A sync started in the foreground mid-session starts no sync banner.
+        SyncLiveActivityController.shared.holdsBackNewBanner = { [weak liftSession] in
+            liftSession?.isActive == true
+        }
+        // Before any view or publisher exists: the first push to the Lock Screen banner must find the
+        // session already running, or it ends the banner iOS kept alive across the restart.
+        liftSession.resumeSaved()
         // #1538: a strap offload completes while the app is BACKGROUNDED — it stays alive as a
         // bluetooth-central to receive it — and the re-score it triggers took nearly eight minutes on the
         // reporter's install, far longer than that wake survives. The pass is all-or-nothing, so being
@@ -219,7 +235,10 @@ struct StrandiOSApp: App {
                         connected: model.live.connected && !liftSession.isActive && !model.live.backfilling,
                         effort: day?.strain.map { Int($0.rounded()) }
                     )
-                    pushLiftActivity()
+                    // The gym banner's own cheap path: no presentation is built here, and a heart rate moves
+                    // the banner only when `LiftBannerPushPolicy` says it is worth a push. Everything else
+                    // about the session pushes through `pushLiftActivity` below, carrying the current number.
+                    liftActivity.updateHeartRate(model.live.connected ? (model.bpm ?? model.live.heartRate) : nil)
                 }
                 // End the Live Activity the moment the link drops, even if no further HR tick arrives.
                 .onReceive(model.live.$connected) { isConnected in
@@ -234,11 +253,13 @@ struct StrandiOSApp: App {
                         effort: day?.strain.map { Int($0.rounded()) }
                     )
                 }
-                // The gym session's own banner. Driven off the session's 1 Hz tick so a stage change
-                // reaches the Lock Screen promptly; the controller decides what is actually worth
-                // pushing, since the widget's clocks tick on their own.
-                .onReceive(liftSession.$now) { _ in pushLiftActivity() }
-                .onReceive(liftSession.$engine) { _ in pushLiftActivity() }
+                // The gym session's own banner follows each change to the session once it has landed —
+                // a stage, typed numbers, a rest's end — and the heart rate above; the controller decides
+                // what is worth pushing, and the banner's clocks tick on their own. A strap step is pushed
+                // at once, with its light-up alert, below.
+                .onReceive(liftSession.changesSettled) { _ in pushLiftActivity() }
+                // A strap double-tap lights the Lock Screen on the step it took.
+                .onReceive(liftSession.strapStepTaken) { _ in pushLiftActivity(alert: true) }
                 // #911/#759: republish the Home/Lock-Screen widget whenever the dashboard caches actually
                 // change mid-session. The only other publish site is the scenePhase .active handler, so
                 // during a long foreground session the widget froze at the last-foreground snapshot while
@@ -329,6 +350,9 @@ struct StrandiOSApp: App {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 model.drainPendingIntents(router: router)
+                // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
+                // the background comes back now, whether or not the strap is sending anything.
+                pushLiftActivity()
                 // End a "Connecting…" sync island whose sync never came, rather than leave it greyed.
                 SyncLiveActivityController.shared.reconcile(live: model.live)
                 // Re-arm the strap's smart alarm on foreground: the firmware alarm is a single instant
@@ -394,25 +418,28 @@ struct StrandiOSApp: App {
     /// The wording and the numbers come from `LiftSessionController.presentation`, the same
     /// resolution the in-app minimised bar renders, so the two surfaces cannot disagree. The heart
     /// rate is the app's smoothed value, and only while the strap is actually connected — a frozen
-    /// last-known bpm on a Lock Screen reads as live and is not.
+    /// last-known bpm on a Lock Screen reads as live and is not. `alert` lights the Lock Screen for this
+    /// push — see `LiftLiveActivityController.update`.
     @MainActor
-    private func pushLiftActivity() {
+    private func pushLiftActivity(alert: Bool = false) {
         let system = UnitSystem(rawValue: unitSystemRaw) ?? .metric
         guard let p = liftSession.presentation(system: system) else {
-            liftActivity.update(programName: "", state: nil)
+            liftActivity.update(state: nil)
             return
         }
-        liftActivity.update(
-            programName: liftSession.programName ?? String(localized: "Session"),
+        let lightUp = liftActivity.update(
             state: LiftActivityAttributes.ContentState(
                 isResting: p.isResting,
                 exercise: p.exercise,
                 status: p.status,
                 detail: p.detail,
                 bpm: model.live.connected ? (model.bpm ?? model.live.heartRate) : nil,
-                progress: String(localized: "\(p.setsDone) of \(p.setsPlanned) sets done"),
+                next: p.next,
                 stageStartedAt: p.stageStartedAt,
-                restEndsAt: p.restEndsAt))
+                restEndsAt: p.restEndsAt),
+            alert: alert)
+        // One line per strap step into NOOP's strap log: whether the Lock Screen was asked to light.
+        if let lightUp { model.live.append(log: AppModel.stamped(lightUp.logLine)) }
     }
 }
 
