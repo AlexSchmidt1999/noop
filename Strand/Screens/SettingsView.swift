@@ -1933,7 +1933,8 @@ struct SettingsView: View {
         }
     }
 
-    /// SpO2 candidate display (#103/queue-11a) — split out of `fiveMGCard` (2026-08-23): the toggle's
+    /// SpO2 candidate display (#103/queue-11a) — split out of the WHOOP 5/MG research card
+    /// `fiveMGCard` (2026-08-23; #1709 removed that card's call site and #2417 its body): the toggle's
     /// own copy has covered Oura since `89c8533b` ("Blood Oxygen: strap estimate (WHOOP 5/MG, Oura)"),
     /// but it stayed nested inside the WHOOP-5/MG-only card, gated by `showFiveMGControls` — so an
     /// Oura-only install (no WHOOP 5/MG ever connected) could never reach it. `metricSeries` confirmed
@@ -2016,7 +2017,8 @@ struct SettingsView: View {
     }
 
     /// Export the last 24h of decoded sensor streams for the connected strap to a CSV, then save (macOS
-    /// NSSavePanel) or share (iOS share sheet) — the same pattern as exportPuffinCaptures().
+    /// NSSavePanel) or share (iOS share sheet). This is the only exporter left on this screen: the Puffin
+    /// capture export that shared the shape went with the research card in #2417.
     ///
     /// The strap id comes from `repo.deviceId`, NOT `model.deviceId`. The latter is a hardcoded
     /// `let "my-whoop"`; the former is seeded with it and then re-pointed to the registry's active strap
