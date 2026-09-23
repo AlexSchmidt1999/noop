@@ -77,9 +77,16 @@ private val CAPABILITIES: List<CapabilityRow> = listOf(
     ),
     CapabilityRow(
         "Strap broadcasts its own HR",
-        Support.YES, Support.YES,
-        "A 4.0 uses its dedicated broadcast command. A 5/MG uses the " +
-            "whoop_live_hr_in_adv_ind_pkt firmware setting.",
+        Support.PARTIAL, Support.YES,
+        // PARTIAL on the 4.0, not YES: the strap is asked over TOGGLE_GENERIC_HR_PROFILE (14) and
+        // answers, but nothing reads back whether it actually advertises 0x180D, and the opcode was
+        // verified on one strap on one firmware (#2400). Every log line on that path says "effect not
+        // confirmed" for the same reason, and this row is where a 4.0 owner decides whether to rely on
+        // it, so it must not claim more than the code does. The 5/MG column keeps YES: its
+        // device-config write is read back on opcode 121.
+        "A 4.0 is asked over its own broadcast command and answers, but nothing can read back whether " +
+            "it really advertises, and it has been confirmed on one strap on one firmware. A 5/MG uses " +
+            "the whoop_live_hr_in_adv_ind_pkt firmware setting, which NOOP reads back.",
     ),
     CapabilityRow(
         "Steps",
