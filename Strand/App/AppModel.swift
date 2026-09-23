@@ -127,6 +127,31 @@ final class AppModel: ObservableObject {
 
         var isPaused: Bool { pausedAt != nil }
 
+        /// Adds a heart-rate sample unless this second already has one, and says whether it did.
+        ///
+        /// `captureWorkoutSample` runs from two `@Published` sinks (`heartRate` and `rr`), so a strap sends
+        /// it one call per R-R packet plus another whenever the rate itself moves, which during exercise is
+        /// most seconds: two samples with one `ts`. Effort credits each sample with the gap to the next and a
+        /// zero gap with a full second (`StrainScorer.sampleDurationsMinutes`), so every repeat counted as
+        /// another second of effort, live and in the saved workout. The stream is one reading a second.
+        ///
+        /// A refused reading still reaches `peakHr`: the sinks fire because the rate moved, so a repeat is often a
+        /// different bpm for that second, and a within-second high is part of the workout's peak. Only the last
+        /// sample is compared, so this drops a repeat of the current second, not an out-of-order arrival; the live
+        /// stream is monotonic.
+        mutating func recordSample(_ sample: HRSample) -> Bool {
+            if let last = samples.last, last.ts == sample.ts {
+                peakHr = max(peakHr, sample.bpm)
+                return false
+            }
+            samples.append(sample)
+            return true
+        }
+
+        /// The maximum heart rate the workout is saved with: the highest sample, or a higher reading a repeated
+        /// second folded into `peakHr` (`recordSample`). Nil with no samples.
+        var savedPeak: Int? { samples.map(\.bpm).max().map { max($0, peakHr) } }
+
         /// Delegates to `ActiveWorkoutClock` so this and the two card surfaces cannot drift apart again.
         func elapsed(at now: Date = Date()) -> TimeInterval {
             ActiveWorkoutClock.activeElapsed(start: start, pausedAt: pausedAt,
@@ -985,7 +1010,7 @@ final class AppModel: ObservableObject {
         }
         let avg = samples.isEmpty ? nil
             : Int((Double(samples.map(\.bpm).reduce(0, +)) / Double(samples.count)).rounded())
-        let peak = samples.map(\.bpm).max()
+        let peak = w.savedPeak
         // #983: score the SAVED workout with the wearer's measured resting HR, not the hardcoded
         // default of 60. %HRR is (bpm - resting) / (max - resting), so the default moves every zone
         // boundary — at 136 bpm with maxHR 190 it is the difference between zone 1 and zone 2. Today's
@@ -1045,7 +1070,13 @@ final class AppModel: ObservableObject {
     /// over the growing window each sample is cheap at the ~1 Hz live-HR cadence.
     private func captureWorkoutSample() {
         guard var w = activeWorkout, !w.isPaused, let hr = bpm else { return }
-        w.samples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
+        // A second that already has its sample moves only the peak: publish that, and skip the rescore and the
+        // snapshot (the next second's sample carries the peak into the snapshot).
+        let peakBefore = w.peakHr
+        guard w.recordSample(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr)) else {
+            if w.peakHr != peakBefore { activeWorkout = w }
+            return
+        }
         w.peakHr = max(w.peakHr, hr)
         w.avgHr = Int((Double(w.samples.map(\.bpm).reduce(0, +)) / Double(w.samples.count)).rounded())
         w.liveStrain = StrainScorer.strain(w.samples, maxHR: Double(profile.hrMax),
