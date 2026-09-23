@@ -2047,6 +2047,32 @@ class WhoopRepository(
         return dedupSleepBlocks(ids.flatMap { dao.sleepSessions(it, from, to, limit) })
     }
 
+    /**
+     * ALL sleep sessions across every registered WHOOP (active first, archived included, canonical
+     * last) over the last [days], imported [sleepSessionsUnion] merged with the computed
+     * [computedSleepSessionsUnion] twin: a computed session is kept only when its LOCAL wake-day (the
+     * same `AnalyticsEngine.dayString` keyer `mergeSleep` uses) is NOT already covered by an imported
+     * session that day — no richness exception, unlike `mergeSleepRichness`/[sleepSessionsMerged].
+     * Sorted by [SleepSession.effectiveStartTs] ascending, so the caller's `.lastOrNull()` is the most
+     * recent night. Robust to a stale/wrong [deviceId] (e.g. no strap currently connected) because
+     * [rawWhoopSourceIds] enumerates every registered WHOOP regardless of which id is passed in.
+     * Mirrors Swift `Repository.allSleepSessions(days:)` exactly.
+     */
+    suspend fun allSleepSessionsUnion(deviceId: String, days: Int = 4000): List<SleepSession> {
+        val now = System.currentTimeMillis() / 1000L
+        val lo = now - days * 86_400L
+        val hi = now + 86_400L
+        val imported = sleepSessionsUnion(deviceId, lo, hi)
+        val computed = computedSleepSessionsUnion(deviceId, lo, hi)
+        fun endDay(s: SleepSession): String {
+            val offsetSec = (java.util.TimeZone.getDefault().getOffset(s.endTs * 1000) / 1000).toLong()
+            return com.noop.analytics.AnalyticsEngine.dayString(s.endTs, offsetSec)
+        }
+        val importedDays = imported.mapTo(HashSet(), ::endDay)
+        val computedKept = computed.filter { endDay(it) !in importedDays }
+        return (imported + computedKept).sortedBy { it.effectiveStartTs }
+    }
+
     /** Workouts over every registered WHOOP (active first, archived retained) plus canonical "my-whoop",
      *  matching [hrSamplesUnion] / [sleepSessionsUnion]. A re-added strap owns "whoop-<uuid>" while
      *  imports + prior data live under "my-whoop", so a read pinned to a SINGLE id strands the other's
