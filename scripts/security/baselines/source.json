@@ -597,7 +597,7 @@
     ".github/workflows/source-hygiene.yml": "4ff9e3f0d2e95e90c82994edcee194dd4fa0bfa4c876449374861f4ff16782e9",
     ".github/workflows/swift-packages.yml": "b2c9ec8546d23b96b386657c617c29ba8b4879e124b180ef6c44ff4fa2630848",
     ".github/workflows/tools-python.yml": "bb221ff0393665f91cc39c663be354daa7393447b7024d657df4cd549aa2af56",
-    ".gitleaksignore": "cfae0df5562dd9d7abf5aac53baa62d5834e439fd7536b760c3378818051594b",
+    ".gitleaksignore": "ecfd726f629462bf2b6c39867816d8f51ad149751f8aaf8ec4b59205674cab7e",
     "Config/BundleId.xcconfig": "30391404a2f938b655fea13c86089affb5ce4949c27d014b9a887d5fb5a47fe4",
     "Config/BundleIdSecrets.example.xcconfig": "8f168e1a8a3f4cc85b981c0aa752ae878cf0aae3538721f9cbee0f9b7b487202",
     "Strand/Oura/OuraConfig.xcconfig": "f4063ca8dcd5836ad3cdf7275abff87318a4488cb72987abd12443ff0e144b3b",

@@ -23,3 +23,6 @@ f5522a2de5206806c3c9f28991d33fa655267a93:StrandTests/TestCentreActivationTests.s
 # scripts/security/baselines/source.json:844,846 — SHA-256 digests of tracked xcconfig files, not credentials.
 ed7e8a66de79f0be44fe4461fd64961a6f6aebf6:scripts/security/baselines/source.json:generic-api-key:844
 ed7e8a66de79f0be44fe4461fd64961a6f6aebf6:scripts/security/baselines/source.json:generic-api-key:846
+# Public-fork baseline refresh: SHA-256 digests of tracked xcconfig examples, not credentials.
+6b43ec8db44718d30b18d92e693cca850b094f68:scripts/security/baselines/source.json:generic-api-key:602
+6b43ec8db44718d30b18d92e693cca850b094f68:scripts/security/baselines/source.json:generic-api-key:604
