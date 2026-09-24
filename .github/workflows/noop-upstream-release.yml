@@ -1,44 +1,28 @@
-name: Check upstream NOOP releases
+name: Update upstream NOOP release
 
 on:
   schedule:
-    - cron: '17 7 * * 1'
+    - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
+  actions: write
+
+concurrency:
+  group: noop-upstream-release
+  cancel-in-progress: false
 
 jobs:
-  check:
+  update:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          persist-credentials: false
-      - name: Notify the owner once per new upstream release
+          fetch-depth: 0
+      - name: Prepare or promote a scanned release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          approved="$(cat Config/UpstreamRelease.txt)"
-          latest="$(gh release view --repo ryanbr/noop --json tagName --jq .tagName)"
-          [[ "$latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          if [[ "$latest" == "$approved" ]]; then
-            echo "No new upstream release ($latest)"
-            exit 0
-          fi
-          title="Upstream NOOP release: $latest"
-          if gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "$title in:title" --json title --limit 100 |
-              jq -e --arg title "$title" "any(.[]; .title == \$title)" >/dev/null; then
-            echo "Release issue already exists ($latest)"
-            exit 0
-          fi
-          body="$(mktemp)"
-          trap 'rm -f "$body"' EXIT
-          {
-            printf 'Upstream released [%s](https://github.com/ryanbr/noop/releases/tag/%s). The approved app version is %s.\n\n' "$latest" "$latest" "$approved"
-            printf 'Review the upstream diff and security-sensitive changes. Update the candidate, run the full security workflow once, and approve its artifact locally only after all six required jobs pass. Then update Config/UpstreamRelease.txt.\n'
-          } > "$body"
-          gh issue create --repo "$GITHUB_REPOSITORY" --assignee AlexSchmidt1999 --title "$title" --body-file "$body"
+        run: python3 scripts/security/auto_update.py --runner

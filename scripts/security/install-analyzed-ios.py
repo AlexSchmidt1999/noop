@@ -29,7 +29,7 @@ PARTS = [
     ("PlugIns/NOOPWidgets.appex", "NOOPiOSWidgets", ".noop.widgets"),
     (".", "NOOPiOS", ".noop"),
 ]
-REQUIRED_JOBS = {"source-policy", "secrets", "ios-static", "build-unsigned", "security-gate", "mobsf-binary"}
+REQUIRED_JOBS = {"source-policy", "secrets", "ios-static", "build-unsigned", "codeql-swift", "security-gate", "mobsf-binary"}
 PROFILE_DIRS = [
     Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles",
     Path.home() / "Library/MobileDevice/Provisioning Profiles",
@@ -220,7 +220,119 @@ def profiles(team, prefix):
     return result
 
 
-def refresh_profiles_if_needed(team, prefix, device):
+def safe_provisioning_project(destination, team, prefix):
+    """Generate a fixed, dependency-free project; never build downloaded app source."""
+    app_source = 'import SwiftUI\n@main struct ProfileApp: App { var body: some Scene { WindowGroup { Text("Profiles") } } }\n'
+    widget_source = '''import WidgetKit
+import SwiftUI
+@main struct ProfileWidget: Widget {
+    let kind = "ProfileWidget"
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { _ in Text("Profiles") }
+    }
+}
+struct Provider: TimelineProvider {
+    func placeholder(in context: Context) -> Entry { Entry(date: .now) }
+    func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) { completion(Entry(date: .now)) }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+        completion(Timeline(entries: [Entry(date: .now)], policy: .never))
+    }
+}
+struct Entry: TimelineEntry { let date: Date }
+'''
+    for name, source in (("iOSApp", app_source), ("WatchApp", app_source),
+                         ("iOSWidget", widget_source), ("WatchWidget", widget_source)):
+        (destination / f"{name}.swift").write_text(source)
+    group = f"group.{prefix}.noop.staging"
+    for name, health in (("iOSApp", True), ("WatchApp", True), ("iOSWidget", False), ("WatchWidget", False)):
+        entitlements = {"com.apple.security.application-groups": [group]}
+        if health:
+            entitlements["com.apple.developer.healthkit"] = True
+            entitlements["com.apple.developer.healthkit.access"] = []
+        if name == "iOSApp":
+            entitlements["com.apple.developer.healthkit.background-delivery"] = True
+        (destination / f"{name}.entitlements").write_bytes(plistlib.dumps(entitlements))
+    spec = f'''name: NOOPProfiles
+settings:
+  base:
+    DEVELOPMENT_TEAM: {team}
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+targets:
+  iOSApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [iOSApp.swift]
+    info:
+      path: iOSApp-Info.plist
+      properties:
+        NSHealthShareUsageDescription: "Profile renewal"
+        NSHealthUpdateUsageDescription: "Profile renewal"
+    entitlements:
+      path: iOSApp.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: {prefix}.noop
+    dependencies:
+      - target: iOSWidget
+      - target: WatchApp
+  iOSWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [iOSWidget.swift]
+    info:
+      path: iOSWidget-Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: iOSWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: {prefix}.noop.widgets
+  WatchApp:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources: [WatchApp.swift]
+    info:
+      path: WatchApp-Info.plist
+      properties:
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: {prefix}.noop
+        NSHealthShareUsageDescription: "Profile renewal"
+        NSHealthUpdateUsageDescription: "Profile renewal"
+    entitlements:
+      path: WatchApp.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: {prefix}.noop.watch
+    dependencies:
+      - target: WatchWidget
+  WatchWidget:
+    type: app-extension
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources: [WatchWidget.swift]
+    info:
+      path: WatchWidget-Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: WatchWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: {prefix}.noop.watch.complications
+'''
+    (destination / "project.yml").write_text(spec)
+    command("xcodegen", "generate", "--spec", str(destination / "project.yml"), "--project", str(destination), quiet=True)
+    return destination / "NOOPProfiles.xcodeproj"
+
+
+def refresh_profiles_if_needed(team, prefix):
     current = profiles(team, prefix)
     expected = {f"{team}.{prefix}{suffix}" for _, _, suffix in PARTS}
     cutoff = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=3)
@@ -234,9 +346,11 @@ def refresh_profiles_if_needed(team, prefix, device):
             path.rename(backup)
             moved.append((backup, path))
         try:
-            command("xcodebuild", "-quiet", "-project", "Strand.xcodeproj", "-scheme", "NOOPiOS", "-configuration", "Release",
-                    "-destination", f"platform=iOS,id={device}", "-derivedDataPath", derived_data(),
-                    "-allowProvisioningUpdates", "build", cwd=ROOT, quiet=True)
+            with tempfile.TemporaryDirectory(prefix="noop-provision-project-") as project_dir:
+                project = safe_provisioning_project(Path(project_dir), team, prefix)
+                command("xcodebuild", "-quiet", "-project", str(project), "-scheme", "iOSApp", "-configuration", "Release",
+                        "-destination", "generic/platform=iOS", "-derivedDataPath", derived_data(),
+                        "-allowProvisioningUpdates", "build", cwd=project_dir, quiet=True)
             renewed = profiles(team, prefix)
             if renewed.keys() != expected or any(data["ExpirationDate"].replace(tzinfo=dt.timezone.utc) <= cutoff for _, data in renewed.values()):
                 raise RuntimeError("Xcode did not renew all four profiles")
@@ -309,7 +423,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="noop-install-") as temp:
         scratch = Path(temp)
         app, baseline = extract_verified(APPROVED, scratch, {"head_sha": approval["commit"], "repository": {"full_name": approval["repository"]}}, prefix, approval["source_baseline_sha256"])
-        selected = refresh_profiles_if_needed(team, prefix, device)
+        selected = refresh_profiles_if_needed(team, prefix)
         sign(app, baseline, selected, prefix, team, device, scratch)
         command("xcrun", "devicectl", "device", "install", "app", "--device", device, str(app), quiet=True)
         STATE.parent.mkdir(parents=True, exist_ok=True)
