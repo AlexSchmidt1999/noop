@@ -34,6 +34,13 @@ class AutoUpdateSafetyTests(unittest.TestCase):
             auto_update.inspect_pending_candidate("candidate-sha")
         promote.assert_not_called()
 
+    def test_scheduled_check_does_not_scan_unchanged_main(self):
+        with patch.object(auto_update, "prepare_candidate") as prepare, \
+             patch.object(auto_update, "dispatch") as dispatch:
+            auto_update.prepare_if_new_release("v11.8.0", "v11.8.0")
+        prepare.assert_not_called()
+        dispatch.assert_not_called()
+
     def test_manual_promotion_rejects_a_different_run(self):
         run = {
             "id": 7, "head_sha": "candidate-sha", "head_branch": auto_update.BRANCH,
