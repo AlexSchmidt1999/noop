@@ -674,7 +674,7 @@
     "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
     "project.yml": "10446c834f59c58f7af1b8e8bb2edcae92a89e4f4fd93d96a06b474340fc5d4a",
-    "scripts/security/auto_update.py": "127d4d8c804a69be5762e011e4b87ea4daf69596b04e4e2e62457ac94714fa5e",
+    "scripts/security/auto_update.py": "322711df19235714f412a0e12fc8aed2c4bd4f31037427dd938a2c081a974c23",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
     "scripts/security/install-analyzed-ios.py": "3e3364ab71ae9b3edf453f3ebf1bd59de63c603f2d43c64e7caa28d2f735b18a",
@@ -682,7 +682,7 @@
     "scripts/security/policy.py": "00fb5d1f5da3bc9338997db868f2fbc200c7b5c1d6eba90616cd6c9957117412",
     "scripts/security/run-all.sh": "cec85fcd3b19b762590df3c5161029f7a17359a064884b05a03ee4846d6ee7ff",
     "scripts/security/sarif_gate.py": "72105e91a961c19cc20036c4170a5401169282c097957cc9659148adf6d01d2d",
-    "scripts/security/test_auto_update.py": "b5592ee9f1f7fc7117aa8904c338ae8b2e62b68d0911d4c11f0c5f37380287b1",
-    "scripts/security/update-noop-background.sh": "2c379291694242d0bf6dca29c21bdc52ebf2d4edb608de4dcb003b6d6d5ddd86"
+    "scripts/security/test_auto_update.py": "7b53cad2d79454951480331e85c5bceb9a7804d5ede80e9ef05e42141989684d",
+    "scripts/security/update-noop-background.sh": "9a7782d295f596859ab66da71cdb935cb3e8e15435ee99725b5b2521625d5718"
   }
 }
