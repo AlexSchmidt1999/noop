@@ -35,8 +35,9 @@ public enum NoopVisualStyle {
     public static let sectionGap: CGFloat = 26
 }
 
-/// Shared card/panel treatment: a quiet vertical gradient, a top-lit rim, and deep soft elevation.
-/// `tint` is intentionally faint so metric identity never turns the whole card into a coloured tile.
+/// Shared card/panel treatment. iOS uses a solid fill and border to reduce offscreen work while
+/// scrolling Today; macOS retains the vertical gradient, top-lit rim, and soft elevation.
+/// `tint` remains faint so metric identity never turns the card into a coloured tile.
 public struct NoopPanelSurface: View {
     public var tint: Color?
     public var cornerRadius: CGFloat

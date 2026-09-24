@@ -4,6 +4,11 @@
 
 <h1 align="center">NOOP</h1>
 
+> **About this fork:** `AlexSchmidt1999/noop` includes measured iPhone Today performance changes
+> and an owner-approved iOS update path. See [what changed and why it is faster](docs/FORK-IOS-PERFORMANCE.md)
+> and [how release approval and signing work](docs/FORK-IOS-AUTO-INSTALL.md). The upstream download
+> links below lead to `ryanbr/noop` builds; build this fork's `NOOPiOS` target to use these changes.
+
 <p align="center"><b>Your strap. Your data. Your machine. Offline, on-device, no cloud.</b></p>
 
 <p align="center"><sub>Now in the all-new <b>Liquid Metal</b> design: one living look across iPhone, Android and Mac.</sub></p>
