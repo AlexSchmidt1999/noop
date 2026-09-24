@@ -81,4 +81,13 @@ final class ChartDownsampleTests: XCTestCase {
         XCTAssertEqual(viaConcreteOverload.map(\.date), viaGenericOverload.map(\.date))
         XCTAssertEqual(viaConcreteOverload.map(\.value), viaGenericOverload.map(\.value))
     }
+
+    func testNearestPointKeepsFullResolutionAndEarlierTie() {
+        let pts = [0, 10, 20].map { TrendPoint(date: Date(timeIntervalSince1970: Double($0)), value: Double($0)) }
+        XCTAssertNil(nearestTrendPoint(to: Date(), in: []))
+        XCTAssertEqual(nearestTrendPoint(to: Date(timeIntervalSince1970: -1), in: pts)?.value, 0)
+        XCTAssertEqual(nearestTrendPoint(to: Date(timeIntervalSince1970: 5), in: pts)?.value, 0)
+        XCTAssertEqual(nearestTrendPoint(to: Date(timeIntervalSince1970: 16), in: pts)?.value, 20)
+        XCTAssertEqual(nearestTrendPoint(to: Date(timeIntervalSince1970: 30), in: pts)?.value, 20)
+    }
 }
