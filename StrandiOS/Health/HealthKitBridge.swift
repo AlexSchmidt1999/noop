@@ -428,9 +428,19 @@ final class HealthKitBridge: ObservableObject {
             return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
         }()
 
+        // The delta is only used to choose a re-aggregation window capped at 31 days below. Without
+        // a date predicate, a fresh anchor decodes the user's entire Health history (including years of
+        // minute-level Watch HR) just to discard all days outside that window.
+        let cal = Calendar.current
+        guard let oldestRelevant = cal.date(byAdding: .day, value: -31,
+                                            to: cal.startOfDay(for: Date())) else { return (nil, nil) }
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForSamples(withStart: oldestRelevant, end: nil, options: []),
+            Self.notNoopAuthored,
+        ])
         return await withCheckedContinuation { (cont: CheckedContinuation<(Date?, HKQueryAnchor?), Never>) in
             let q = HKAnchoredObjectQuery(
-                type: type, predicate: Self.notNoopAuthored,
+                type: type, predicate: predicate,
                 anchor: priorAnchor, limit: HKObjectQueryNoLimit
             ) { _, samples, _, newAnchor, _ in
                 // Return the advanced anchor but do NOT persist it here: the caller commits it only after
