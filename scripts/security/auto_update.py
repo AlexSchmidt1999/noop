@@ -14,6 +14,7 @@ WORKFLOW = "noop-security.yml"
 BRANCH = "codex/auto-upstream-release"
 UPSTREAM = "https://github.com/ryanbr/noop.git"
 WORKTREE = ROOT / "build/noop-auto-candidate"
+PENDING_CURRENT = ROOT / "build/noop-pending-current-approval.json"
 VERSION_LINE = re.compile(r'(?m)^(\s*(?:MARKETING_VERSION|CURRENT_PROJECT_VERSION):\s*)"[^"]+"(\s*)$')
 
 
@@ -135,19 +136,47 @@ def inspect_pending_candidate(sha):
         print(f"Candidate {sha} has security run {run['id']} ({run['status']}/{run.get('conclusion')}); awaiting owner approval")
 
 
+def cache_approved_current():
+    """Cache one already installed, owner-approved main commit after its scan passes."""
+    if not PENDING_CURRENT.exists():
+        return
+    pin = json.loads(PENDING_CURRENT.read_text())
+    run_id, sha = pin.get("run_id"), pin.get("commit")
+    if type(run_id) is not int or run_id <= 0 or not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise RuntimeError("Invalid pinned current approval")
+    run = json.loads(command("gh", "api", f"repos/{REPO}/actions/runs/{run_id}").stdout)
+    if (run.get("head_sha") != sha or run.get("head_branch") != "main"
+            or run.get("event") != "workflow_dispatch"
+            or run.get("repository", {}).get("full_name") != REPO
+            or run.get("path", "").split("@")[0] != f".github/workflows/{WORKFLOW}"):
+        raise RuntimeError("Pinned approval does not match the scanned main commit")
+    if run["status"] != "completed":
+        print(f"Waiting for security run {run_id} of the already installed version")
+        return
+    if run["conclusion"] != "success":
+        raise RuntimeError(f"Security run {run_id} did not pass: {run['conclusion']}")
+    command("python3", "scripts/security/install-analyzed-ios.py", "--approve-run", str(run_id), "--branch", "main")
+    PENDING_CURRENT.unlink()
+    print(f"Cached the already approved iOS commit {sha} for five-day renewal")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="Read-only status check")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--runner", action="store_true", help="Prepare and scan releases on a GitHub runner")
     mode.add_argument("--promote-run", type=int, metavar="RUN_ID", help="Promote an explicitly approved green candidate")
+    mode.add_argument("--cache-approved-current", action="store_true", help="Cache an explicitly pinned, already installed main commit after its scan passes")
     args = parser.parse_args()
     if args.check:
         tag = release_tag()
         print(f"Upstream {tag}; fork {git('show', 'origin/main:Config/UpstreamRelease.txt')}; candidate {candidate_sha() or 'none'}")
         return
+    if args.cache_approved_current:
+        cache_approved_current()
+        return
     if not (args.runner or args.promote_run):
-        parser.error("Specify --runner or --promote-run")
+        parser.error("Specify --runner, --promote-run, or --cache-approved-current")
     if git("status", "--porcelain", "--untracked-files=no"):
         raise RuntimeError("The checkout must be clean before automatic updates")
     git("fetch", "origin", "main")

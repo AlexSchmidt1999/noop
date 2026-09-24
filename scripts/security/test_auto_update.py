@@ -1,5 +1,9 @@
+import json
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 import auto_update
 
@@ -45,6 +49,37 @@ class AutoUpdateSafetyTests(unittest.TestCase):
                 changed = {**run, field: value}
                 with self.assertRaises(RuntimeError):
                     auto_update.verify_candidate_run("candidate-sha", changed)
+
+    def test_pinned_current_waits_for_its_exact_green_run(self):
+        sha = "a" * 40
+        run = {
+            "head_sha": sha, "head_branch": "main", "event": "workflow_dispatch",
+            "repository": {"full_name": auto_update.REPO},
+            "path": f".github/workflows/{auto_update.WORKFLOW}@{sha}",
+            "status": "in_progress", "conclusion": None,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            pin = Path(temp) / "pending.json"
+            pin.write_text(json.dumps({"run_id": 123, "commit": sha}))
+            calls = []
+
+            def fake_command(*args, **_):
+                calls.append(args)
+                return SimpleNamespace(stdout=json.dumps(run) if args[0] == "gh" else "")
+
+            with patch.object(auto_update, "PENDING_CURRENT", pin), patch.object(auto_update, "command", side_effect=fake_command):
+                auto_update.cache_approved_current()
+                self.assertTrue(pin.exists())
+                self.assertEqual(len(calls), 1)
+                run["status"], run["conclusion"] = "completed", "success"
+                run["head_sha"] = "b" * 40
+                with self.assertRaises(RuntimeError):
+                    auto_update.cache_approved_current()
+                self.assertTrue(pin.exists())
+                run["head_sha"] = sha
+                auto_update.cache_approved_current()
+                self.assertFalse(pin.exists())
+                self.assertEqual(calls[-1][:3], ("python3", "scripts/security/install-analyzed-ios.py", "--approve-run"))
 
 
 if __name__ == "__main__":

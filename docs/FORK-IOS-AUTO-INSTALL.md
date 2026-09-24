@@ -53,6 +53,18 @@ installer independently verifies the run and analyzed artifact before caching it
 The approval command itself does not install anything; the final command signs and
 installs over the existing app. Keep the same bundle ID to preserve its data.
 
+If the owner has **already installed and accepted** a main commit from a local source
+build before its security run finishes, the gitignored
+`build/noop-pending-current-approval.json` may pin that exact commit and run ID:
+
+```json
+{"commit":"<40-character commit SHA>","run_id":123456789}
+```
+
+The local agent checks only that pinned main run. After it passes, the agent caches
+the analyzed artifact for five-day renewal and removes the pin. This one-time pin
+does not approve any later commit or upstream release.
+
 The Mac must be on and logged in, with GitHub access and a reachable iPhone. An Apple
 account prompt or a disconnected device may delay installation; after approval, the
 agent retries. Personal Team profiles expire after seven days, so keep the five-day
