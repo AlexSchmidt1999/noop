@@ -42,7 +42,9 @@ public struct NoopPanelSurface: View {
     public var cornerRadius: CGFloat
     public var elevated: Bool
     public var surfaceOpacity: Double
+    #if !os(iOS)
     @Environment(\.colorScheme) private var scheme
+    #endif
 
     public init(
         tint: Color? = nil,
@@ -58,6 +60,17 @@ public struct NoopPanelSurface: View {
 
     public var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        #if os(iOS)
+        // Today shows many cards while scrolling; the measured frames reached over 100
+        // offscreen passes. Keep the iPhone surface to one fill and one border.
+        shape
+            .fill(NoopVisualStyle.surface)
+            .overlay(shape.strokeBorder(
+                tint?.opacity(0.14) ?? NoopVisualStyle.borderHighlight.opacity(elevated ? 0.9 : 0.65),
+                lineWidth: 0.8
+            ))
+            .opacity(surfaceOpacity)
+        #else
         shape
             .fill(
                 LinearGradient(
@@ -94,6 +107,7 @@ public struct NoopPanelSurface: View {
                 y: elevated ? 10 : 5
             )
             .opacity(surfaceOpacity)
+        #endif
     }
 }
 
