@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import auto_update
 
@@ -21,6 +22,29 @@ class AutoUpdateSafetyTests(unittest.TestCase):
         ]
         self.assertEqual(auto_update.matching_run(runs, "codex/auto-upstream-release", "right")["id"], 7)
         self.assertIsNone(auto_update.matching_run(runs, "codex/auto-upstream-release", "missing"))
+
+    def test_scheduled_check_never_promotes_a_green_candidate(self):
+        green = {"id": 7, "status": "completed", "conclusion": "success"}
+        with patch.object(auto_update, "workflow_run", return_value=green), \
+             patch.object(auto_update, "promote_candidate") as promote:
+            auto_update.inspect_pending_candidate("candidate-sha")
+        promote.assert_not_called()
+
+    def test_manual_promotion_rejects_a_different_run(self):
+        run = {
+            "id": 7, "head_sha": "candidate-sha", "head_branch": auto_update.BRANCH,
+            "event": "workflow_dispatch", "repository": {"full_name": auto_update.REPO},
+            "path": f".github/workflows/{auto_update.WORKFLOW}@candidate-sha",
+            "status": "completed", "conclusion": "success",
+        }
+        auto_update.verify_candidate_run("candidate-sha", run)
+        for field, value in (("head_sha", "other-sha"), ("head_branch", "main"),
+                             ("event", "push"), ("path", ".github/workflows/other.yml"),
+                             ("status", "in_progress"), ("conclusion", "failure")):
+            with self.subTest(field=field):
+                changed = {**run, field: value}
+                with self.assertRaises(RuntimeError):
+                    auto_update.verify_candidate_run("candidate-sha", changed)
 
 
 if __name__ == "__main__":

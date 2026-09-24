@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare/promote releases on GitHub; approve scanned builds on the paired Mac."""
+"""Prepare and scan upstream releases; promote only after owner approval."""
 
 import argparse
 import json
@@ -13,7 +13,6 @@ REPO = "AlexSchmidt1999/noop"
 WORKFLOW = "noop-security.yml"
 BRANCH = "codex/auto-upstream-release"
 UPSTREAM = "https://github.com/ryanbr/noop.git"
-APPROVAL = ROOT / "build/noop-approved-ios/approval.json"
 WORKTREE = ROOT / "build/noop-auto-candidate"
 VERSION_LINE = re.compile(r'(?m)^(\s*(?:MARKETING_VERSION|CURRENT_PROJECT_VERSION):\s*)"[^"]+"(\s*)$')
 
@@ -61,12 +60,6 @@ def dispatch(branch):
     print(f"Dispatched {WORKFLOW} for {branch}")
 
 
-def approve(run, branch):
-    current = json.loads(APPROVAL.read_text()) if APPROVAL.exists() else {}
-    if current.get("run_id") != run["id"]:
-        command("python3", "scripts/security/install-analyzed-ios.py", "--approve-run", str(run["id"]), "--branch", branch)
-
-
 def candidate_sha():
     line = git("ls-remote", "--heads", "origin", f"refs/heads/{BRANCH}")
     return line.split()[0] if line else None
@@ -110,12 +103,20 @@ def prepare_candidate(tag):
     dispatch(BRANCH)
 
 
-def promote_candidate(sha, run):
+def verify_candidate_run(sha, run):
+    if (run.get("head_sha") != sha or run.get("head_branch") != BRANCH
+            or run.get("event") != "workflow_dispatch"
+            or run.get("repository", {}).get("full_name") != REPO
+            or run.get("path", "").split("@")[0] != f".github/workflows/{WORKFLOW}"):
+        raise RuntimeError("Run does not match the exact scanned candidate")
     if run["status"] != "completed":
-        print(f"Security run {run['id']} is still running")
-        return
+        raise RuntimeError(f"Security run {run['id']} is still running")
     if run["conclusion"] != "success":
         raise RuntimeError(f"Security run {run['id']} did not pass: {run['conclusion']}")
+
+
+def promote_candidate(sha, run):
+    verify_candidate_run(sha, run)
     jobs = json.loads(command("gh", "run", "view", str(run["id"]), "--repo", REPO, "--json", "jobs").stdout)["jobs"]
     passed = {job["name"] for job in jobs if job["conclusion"] == "success"}
     required = {"source-policy", "secrets", "ios-static", "build-unsigned", "codeql-swift", "security-gate", "mobsf-binary"}
@@ -126,19 +127,27 @@ def promote_candidate(sha, run):
     print(f"Promoted scanned release from run {run['id']}")
 
 
+def inspect_pending_candidate(sha):
+    run = workflow_run(BRANCH, sha)
+    if run is None:
+        dispatch(BRANCH)
+    else:
+        print(f"Candidate {sha} has security run {run['id']} ({run['status']}/{run.get('conclusion')}); awaiting owner approval")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="Read-only status check")
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--runner", action="store_true", help="Prepare and promote releases on a GitHub runner")
-    mode.add_argument("--local", action="store_true", help="Approve a scanned main commit on this Mac")
+    mode.add_argument("--runner", action="store_true", help="Prepare and scan releases on a GitHub runner")
+    mode.add_argument("--promote-run", type=int, metavar="RUN_ID", help="Promote an explicitly approved green candidate")
     args = parser.parse_args()
     if args.check:
         tag = release_tag()
         print(f"Upstream {tag}; fork {git('show', 'origin/main:Config/UpstreamRelease.txt')}; candidate {candidate_sha() or 'none'}")
         return
-    if not (args.runner or args.local):
-        parser.error("Specify --runner or --local")
+    if not (args.runner or args.promote_run):
+        parser.error("Specify --runner or --promote-run")
     if git("status", "--porcelain", "--untracked-files=no"):
         raise RuntimeError("The checkout must be clean before automatic updates")
     git("fetch", "origin", "main")
@@ -148,27 +157,15 @@ def main():
         raise RuntimeError("The local checkout must be on main")
     git("merge", "--ff-only", "origin/main")
     main_sha = git("rev-parse", "HEAD")
-    if args.local:
-        current = json.loads(APPROVAL.read_text()) if APPROVAL.exists() else {}
-        if current.get("commit") == main_sha:
-            return
-        run = workflow_run(BRANCH, main_sha) or workflow_run("main", main_sha)
-        if run is None:
-            print(f"Waiting for a security run for {main_sha}")
-        elif run["status"] != "completed":
-            print(f"Security run {run['id']} is still running")
-        elif run["conclusion"] == "success":
-            approve(run, run["head_branch"])
-        else:
-            raise RuntimeError(f"Security run {run['id']} did not pass: {run['conclusion']}")
-        return
     pending = candidate_sha()
+    if args.promote_run:
+        if not pending:
+            raise RuntimeError("No candidate branch to approve")
+        run = json.loads(command("gh", "api", f"repos/{REPO}/actions/runs/{args.promote_run}").stdout)
+        promote_candidate(pending, run)
+        return
     if pending:
-        run = workflow_run(BRANCH, pending)
-        if run is None:
-            dispatch(BRANCH)
-        else:
-            promote_candidate(pending, run)
+        inspect_pending_candidate(pending)
         return
     tag = release_tag()
     approved_tag = (ROOT / "Config/UpstreamRelease.txt").read_text().strip()
