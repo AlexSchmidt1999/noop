@@ -1,0 +1,686 @@
+{
+  "capabilities": {
+    "NOOPWatch": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).noop.watch",
+      "entitlements": {
+        "path": "NOOPWatch/NOOPWatch.entitlements",
+        "values": {
+          "com.apple.developer.healthkit": true,
+          "com.apple.developer.healthkit.access": [],
+          "com.apple.security.application-groups": [
+            "$(APP_GROUP_ID)"
+          ]
+        }
+      },
+      "info": {
+        "path": "NOOPWatch/Info.plist",
+        "values": {
+          "AppGroupIdentifier": "$(APP_GROUP_ID)",
+          "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+          "CFBundleDisplayName": "NOOP",
+          "CFBundleExecutable": "$(EXECUTABLE_NAME)",
+          "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+          "CFBundleInfoDictionaryVersion": "6.0",
+          "CFBundleName": "NOOP",
+          "CFBundlePackageType": "APPL",
+          "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+          "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+          "NSHealthShareUsageDescription": "NOOP reads your heart rate from the Watch sensor to show a live readout on your wrist. It stays on your device.",
+          "NSHealthUpdateUsageDescription": "NOOP records a basic workout session on your Watch for a higher-fidelity heart rate. The session stays on your device.",
+          "WKApplication": true,
+          "WKCompanionAppBundleIdentifier": "$(BUNDLE_ID_PREFIX).noop"
+        }
+      }
+    },
+    "NOOPWatchComplications": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).noop.watch.complications",
+      "entitlements": {
+        "path": "NOOPWatchComplications/NOOPWatchComplications.entitlements",
+        "values": {
+          "com.apple.security.application-groups": [
+            "$(APP_GROUP_ID)"
+          ]
+        }
+      },
+      "info": {
+        "path": "NOOPWatchComplications/Info.plist",
+        "values": {
+          "AppGroupIdentifier": "$(APP_GROUP_ID)",
+          "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+          "CFBundleDisplayName": "NOOP",
+          "CFBundleExecutable": "$(EXECUTABLE_NAME)",
+          "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+          "CFBundleInfoDictionaryVersion": "6.0",
+          "CFBundleName": "$(PRODUCT_NAME)",
+          "CFBundlePackageType": "XPC!",
+          "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+          "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+          "NSExtension": {
+            "NSExtensionPointIdentifier": "com.apple.widgetkit-extension"
+          }
+        }
+      }
+    },
+    "NOOPiOS": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).noop",
+      "entitlements": {
+        "path": "StrandiOS/Resources/NOOP.entitlements",
+        "values": {
+          "com.apple.developer.healthkit": true,
+          "com.apple.developer.healthkit.access": [],
+          "com.apple.developer.healthkit.background-delivery": true,
+          "com.apple.security.application-groups": [
+            "$(APP_GROUP_ID)"
+          ]
+        }
+      },
+      "info": {
+        "path": "StrandiOS/Resources/Info.plist",
+        "values": {
+          "AppGroupIdentifier": "$(APP_GROUP_ID)",
+          "BGTaskSchedulerPermittedIdentifiers": [
+            "$(PRODUCT_BUNDLE_IDENTIFIER).debugexport",
+            "$(PRODUCT_BUNDLE_IDENTIFIER).healthwriteback",
+            "$(PRODUCT_BUNDLE_IDENTIFIER).rescore"
+          ],
+          "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+          "CFBundleDisplayName": "NOOP",
+          "CFBundleExecutable": "$(EXECUTABLE_NAME)",
+          "CFBundleIcons": {
+            "CFBundleAlternateIcons": {
+              "AppIcon-Navy": {
+                "CFBundleIconFiles": [],
+                "UIPrerenderedIcon": false
+              }
+            }
+          },
+          "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+          "CFBundleInfoDictionaryVersion": "6.0",
+          "CFBundleName": "NOOP",
+          "CFBundlePackageType": "APPL",
+          "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+          "CFBundleURLTypes": [
+            {
+              "CFBundleURLSchemes": [
+                "noop"
+              ]
+            }
+          ],
+          "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+          "LSApplicationCategoryType": "public.app-category.healthcare-fitness",
+          "LSSupportsOpeningDocumentsInPlace": true,
+          "NSAppTransportSecurity": {
+            "NSAllowsLocalNetworking": true
+          },
+          "NSBluetoothAlwaysUsageDescription": "NOOP connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device.",
+          "NSHealthShareUsageDescription": "NOOP reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device.",
+          "NSHealthUpdateUsageDescription": "NOOP writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it.",
+          "NSLocationWhenInUseUsageDescription": "NOOP records your route during an outdoor workout to show distance, pace, and a map, and keeps recording while the screen is off. The route stays on your device. Nothing leaves it.",
+          "NSMicrophoneUsageDescription": "NOOP uses the microphone to let you ask the coach a question by voice. The audio is transcribed on-device and never leaves your iPhone.",
+          "NSMotionUsageDescription": "NOOP reads your iPhone's step count for a walking or running workout to show steps in the activity summary. It stays on your device. Nothing leaves it.",
+          "NSSpeechRecognitionUsageDescription": "NOOP transcribes your question on-device so you can ask the coach out loud instead of typing. Audio never leaves your iPhone.",
+          "NSSupportsLiveActivities": true,
+          "OURA_CLIENT_ID": "$(OURA_CLIENT_ID)",
+          "OURA_CLIENT_SECRET": "$(OURA_CLIENT_SECRET)",
+          "OURA_REDIRECT_URI": "$(OURA_REDIRECT_URI)",
+          "UIBackgroundModes": [
+            "bluetooth-central",
+            "location",
+            "fetch",
+            "processing"
+          ],
+          "UIFileSharingEnabled": true,
+          "UILaunchScreen": {},
+          "UISupportedInterfaceOrientations": [
+            "UIInterfaceOrientationPortrait"
+          ],
+          "UISupportedInterfaceOrientations~ipad": [
+            "UIInterfaceOrientationPortrait",
+            "UIInterfaceOrientationPortraitUpsideDown",
+            "UIInterfaceOrientationLandscapeLeft",
+            "UIInterfaceOrientationLandscapeRight"
+          ]
+        }
+      }
+    },
+    "NOOPiOSWidgets": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).noop.widgets",
+      "entitlements": {
+        "path": "StrandiOSWidgets/NOOPWidgets.entitlements",
+        "values": {
+          "com.apple.security.application-groups": [
+            "$(APP_GROUP_ID)"
+          ]
+        }
+      },
+      "info": {
+        "path": "StrandiOSWidgets/Info.plist",
+        "values": {
+          "AppGroupIdentifier": "$(APP_GROUP_ID)",
+          "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+          "CFBundleDisplayName": "NOOP",
+          "CFBundleExecutable": "$(EXECUTABLE_NAME)",
+          "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+          "CFBundleInfoDictionaryVersion": "6.0",
+          "CFBundleName": "$(PRODUCT_NAME)",
+          "CFBundlePackageType": "XPC!",
+          "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+          "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+          "NSExtension": {
+            "NSExtensionPointIdentifier": "com.apple.widgetkit-extension"
+          }
+        }
+      }
+    },
+    "Strand": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).noop.staging",
+      "entitlements": {
+        "path": "Strand/Resources/Strand.entitlements",
+        "values": {
+          "com.apple.security.app-sandbox": true,
+          "com.apple.security.device.bluetooth": true,
+          "com.apple.security.files.user-selected.read-write": true,
+          "com.apple.security.network.client": true
+        }
+      },
+      "info": {
+        "path": "Strand/Resources/Info.plist",
+        "values": {
+          "CFBundleDevelopmentRegion": "$(DEVELOPMENT_LANGUAGE)",
+          "CFBundleDisplayName": "NOOP",
+          "CFBundleExecutable": "$(EXECUTABLE_NAME)",
+          "CFBundleIdentifier": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+          "CFBundleInfoDictionaryVersion": "6.0",
+          "CFBundleName": "NOOP",
+          "CFBundlePackageType": "APPL",
+          "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+          "CFBundleURLTypes": [
+            {
+              "CFBundleURLSchemes": [
+                "noop"
+              ]
+            }
+          ],
+          "CFBundleVersion": "198",
+          "LSApplicationCategoryType": "public.app-category.healthcare-fitness",
+          "LSMinimumSystemVersion": "13.0",
+          "NSAppTransportSecurity": {
+            "NSAllowsLocalNetworking": true
+          },
+          "NSBluetoothAlwaysUsageDescription": "NOOP connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your Mac. Nothing leaves your device.",
+          "NSLocationWhenInUseUsageDescription": "NOOP records your route during an outdoor workout to show distance, pace, and a map. The route stays on your device. Nothing leaves it.",
+          "OURA_CLIENT_ID": "$(OURA_CLIENT_ID)",
+          "OURA_CLIENT_SECRET": "$(OURA_CLIENT_SECRET)",
+          "OURA_REDIRECT_URI": "$(OURA_REDIRECT_URI)"
+        }
+      }
+    },
+    "StrandTests": {
+      "bundle_id": "$(BUNDLE_ID_PREFIX).strandtests",
+      "entitlements": {
+        "path": null,
+        "values": {}
+      },
+      "info": {
+        "path": null,
+        "values": {}
+      }
+    }
+  },
+  "dependencies": {
+    "Packages/NoopLocalAccess/Package.resolved": "e6e18af747bbf34dfca0682b4b23204330543dc988689d344403ae8b3be6959a",
+    "Packages/NoopLocalAccess/Package.swift": "0b17bb8a951c528c482ad7f7694f3bcd972915ec7b09b8704ed5b2a1dd4a8be1",
+    "Packages/OuraProtocol/Package.swift": "8fd698c84148cb7e1fe34aef5b7378036108b8167e0ae1cc794abdf2a9171d56",
+    "Packages/PolarProtocol/Package.swift": "2e6bb456084a456eb621a0caa1d2842ec9b595da355e93acf9b6990dd407c1e3",
+    "Packages/StrandAnalytics/Package.resolved": "e6e18af747bbf34dfca0682b4b23204330543dc988689d344403ae8b3be6959a",
+    "Packages/StrandAnalytics/Package.swift": "ef0153d5656ab18f0666e351cd1959e83262afbf1dd1b6ef1486f7f68a468f50",
+    "Packages/StrandDesign/Package.swift": "c9f130bb78901c04cc6b1f05563e29eaf48ae799d1cae1e5b77fa132e97774a0",
+    "Packages/StrandImport/Package.resolved": "901e46c0c2cd85795b4c36031f59c39803087620939495604846419565293381",
+    "Packages/StrandImport/Package.swift": "5a4d7a388f500576f4f64373418b9256c910101d7b2efed18af55272f4f31841",
+    "Packages/WhoopProtocol/Package.swift": "2d6b45fb1de76f1803fa7092c1f83ce2cbfb8bd6fa3523769fcea33d8082bf20",
+    "Packages/WhoopStore/Package.resolved": "e6e18af747bbf34dfca0682b4b23204330543dc988689d344403ae8b3be6959a",
+    "Packages/WhoopStore/Package.swift": "ed7d43d7f426c88f57ffdc556faa24a493608aba0223c2f5187050f646b2ca3b",
+    "Strand.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved": "985c1f92b2e6774cb9fa2c0109c45610cbd25fbeec6e3e91933cbe1614e2a12a",
+    "Tools/Backfill/Package.resolved": "901e46c0c2cd85795b4c36031f59c39803087620939495604846419565293381",
+    "Tools/Backfill/Package.swift": "c7d22641b799b990945c9fa963e25b8c8e85f0593cf21e02bde4c489aff562fd",
+    "Tools/SleepBench/Package.resolved": "e6e18af747bbf34dfca0682b4b23204330543dc988689d344403ae8b3be6959a",
+    "Tools/SleepBench/Package.swift": "7cb58e87f8adb611fb6f168bdac14b5a2b359b2c1c96be3dbf0e9508ac7919c2",
+    "Tools/SleepPSG/Package.resolved": "e6e18af747bbf34dfca0682b4b23204330543dc988689d344403ae8b3be6959a",
+    "Tools/SleepPSG/Package.swift": "f79b55f70d428a3b7a540f035441c6a8de281c1291ba600d74e6962468e86823"
+  },
+  "endpoints": {
+    "build": {
+      "$domain": [
+        "Tools/forgejo-release.sh:33",
+        "Tools/forgejo-release.sh:57",
+        "Tools/update-homebrew-cask.sh:33"
+      ],
+      "-ios.ipa": [
+        "Tools/update-altstore-source.sh:41"
+      ],
+      "-macos.zip": [
+        "Tools/update-homebrew-cask.sh:47"
+      ],
+      "-noop.fans": [
+        "Tools/forgejo-release.sh:19",
+        "Tools/update-altstore-source.sh:14",
+        "Tools/update-homebrew-cask.sh:18"
+      ],
+      "127.0.0.1": [
+        ".github/workflows/noop-security.yml:365",
+        ".github/workflows/noop-security.yml:371",
+        ".github/workflows/noop-security.yml:378",
+        ".github/workflows/noop-security.yml:382"
+      ],
+      "192.168.x.x": [
+        "project.yml:309"
+      ],
+      "api.github.com": [
+        "Tools/parity_ratchet.py:274",
+        "Tools/prune-stale-branches.py:39",
+        "Tools/refresh-stats-badges.py:14",
+        "Tools/refresh-stats-badges.py:29",
+        "Tools/refresh-stats-badges.py:7",
+        "Tools/tests/test_parity_governance_acceptance.py:1019",
+        "Tools/tests/test_parity_governance_acceptance.py:1059",
+        "Tools/tests/test_parity_governance_acceptance.py:1072",
+        "Tools/tests/test_parity_governance_acceptance.py:1085"
+      ],
+      "args.repo": [
+        "Tools/prune-stale-branches.py:183",
+        "Tools/prune-stale-branches.py:187",
+        "Tools/prune-stale-branches.py:194",
+        "Tools/prune-stale-branches.py:232"
+      ],
+      "bond.hex": [
+        "Tools/linux-capture/whoop_capture.py:236"
+      ],
+      "developer.apple.com": [
+        "Config/BundleIdSecrets.example.xcconfig:9"
+      ],
+      "domain.label": [
+        "Tools/test_home_i18n.py:238"
+      ],
+      "domainlabel.uppercase": [
+        "Tools/test_home_i18n.py:255",
+        "Tools/test_home_i18n.py:261"
+      ],
+      "example.com": [
+        "Tools/test_i18n_audit.py:129"
+      ],
+      "github.com": [
+        ".github/workflows/fork-release.yml:346",
+        ".github/workflows/noop-upstream-release.yml:41",
+        "Tools/parity_ratchet.py:276",
+        "Tools/release.sh:154",
+        "Tools/tests/test_parity_governance_acceptance.py:1020",
+        "Tools/tests/test_parity_governance_acceptance.py:1060",
+        "Tools/tests/test_parity_governance_acceptance.py:1070",
+        "Tools/tests/test_parity_governance_acceptance.py:1086",
+        "Tools/update-altstore-source.sh:41",
+        "Tools/update-homebrew-cask.sh:32",
+        "Tools/update-homebrew-cask.sh:47",
+        "Tools/update-homebrew-cask.sh:50",
+        "project.yml:47",
+        "project.yml:76"
+      ],
+      "health.googleapis.com": [
+        "Tools/google-health-export/export_google_health.py:43"
+      ],
+      "homebrew-noop.git": [
+        "Tools/update-homebrew-cask.sh:32",
+        "Tools/update-homebrew-cask.sh:33"
+      ],
+      "issue.number": [
+        "Tools/parity_ratchet.py:276"
+      ],
+      "issue.repo": [
+        "Tools/parity_ratchet.py:274",
+        "Tools/parity_ratchet.py:276"
+      ],
+      "localhost": [
+        "project.yml:113"
+      ],
+      "oauth2.googleapis.com": [
+        "Tools/google-health-export/export_google_health.py:42"
+      ],
+      "os.getuid": [
+        "scripts/security/enable-background-install.py:24"
+      ],
+      "s.committed": [
+        "Tools/linux-capture/whoop_sync.py:748"
+      ],
+      "schemas.openxmlformats.org": [
+        "Tools/make_lift_program_template.py:144",
+        "Tools/make_lift_program_template.py:160",
+        "Tools/make_lift_program_template.py:169",
+        "Tools/make_lift_program_template.py:197",
+        "Tools/make_lift_program_template.py:208",
+        "Tools/make_lift_program_template.py:209",
+        "Tools/make_lift_program_template.py:214",
+        "Tools/make_lift_program_template.py:215",
+        "Tools/make_lift_program_template.py:223",
+        "Tools/make_lift_program_template.py:224",
+        "Tools/make_lift_program_template.py:225",
+        "Tools/make_lift_program_template.py:226"
+      ],
+      "session.useredited": [
+        "Tools/test_i18n_audit.py:35"
+      ],
+      "staging.app": [
+        "project.yml:197"
+      ]
+    },
+    "runtime": {
+      "192.168.x.x": [
+        "Strand/System/AppChangelog.swift:1557"
+      ],
+      "8281032873.db": [
+        "Packages/StrandImport/Tests/StrandImportTests/XiaomiBandImporterTests.swift:15"
+      ],
+      "`": [
+        "Strand/AI/AIProvider.swift:164",
+        "Strand/AI/AIProvider.swift:165",
+        "Strand/AI/AIProvider.swift:189"
+      ],
+      "ai.custombaseurl": [
+        "Strand/AI/AIProvider.swift:113"
+      ],
+      "api.anthropic.com": [
+        "Strand/AI/AIProvider.swift:85",
+        "Strand/AI/AIProvider.swift:94"
+      ],
+      "api.github.com": [
+        "Strand/System/UpdateChecker.swift:31"
+      ],
+      "api.openai.com": [
+        "Strand/AI/AIProvider.swift:84",
+        "Strand/AI/AIProvider.swift:93"
+      ],
+      "api.ouraring.com": [
+        "Strand/Oura/OuraAPIClient.swift:11",
+        "Strand/Oura/OuraAPIClient.swift:12",
+        "Strand/Oura/OuraOAuth.swift:12"
+      ],
+      "applehealth.hourlysteps.backfilled": [
+        "StrandiOS/Health/HealthKitBridge.swift:166"
+      ],
+      "arrow.down.right.and.arrow.up.left": [
+        "Strand/Screens/FullDayChartView.swift:327"
+      ],
+      "arrow.up.left.and.arrow.down.right": [
+        "Strand/Screens/FullDayChartView.swift:327"
+      ],
+      "c.count": [
+        "Packages/StrandAnalytics/Sources/StrandAnalytics/CaptureCompleteness.swift:134"
+      ],
+      "clock.arrow.circlepath": [
+        "Strand/Screens/RawDataCollectorView.swift:124"
+      ],
+      "cloud.ouraring.com": [
+        "Strand/Oura/OuraOAuth.swift:11"
+      ],
+      "com.apple.preference.notifications": [
+        "Strand/Screens/SmartAlarmView.swift:74"
+      ],
+      "commands.joined": [
+        "Packages/WhoopProtocol/Sources/WhoopProtocol/Whoop5EcgProbe.swift:170",
+        "Packages/WhoopProtocol/Sources/WhoopProtocol/Whoop5EcgProbe.swift:188"
+      ],
+      "definitely-not-here.json": [
+        "Packages/StrandImport/Tests/StrandImportTests/ImportCoordinatorTests.swift:89"
+      ],
+      "export.xml": [
+        "Packages/StrandImport/Sources/StrandImport/AppleHealthImporter.swift:202"
+      ],
+      "figure.curling": [
+        "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:383",
+        "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:491"
+      ],
+      "figure.run.circle": [
+        "Strand/Screens/TodayCustomizationMetadata.swift:8"
+      ],
+      "generativelanguage.googleapis.com": [
+        "Strand/AI/AIProvider.swift:86",
+        "Strand/AI/AIProvider.swift:95"
+      ],
+      "github.com": [
+        "Packages/NoopLocalAccess/Package.swift:15",
+        "Packages/StrandImport/Package.swift:14",
+        "Packages/StrandImport/Package.swift:15",
+        "Packages/WhoopStore/Package.swift:14",
+        "Strand/Screens/SettingsView.swift:2523"
+      ],
+      "grdb.swift.git": [
+        "Packages/NoopLocalAccess/Package.swift:15",
+        "Packages/StrandImport/Package.swift:15",
+        "Packages/WhoopStore/Package.swift:14"
+      ],
+      "haptics.livesession": [
+        "Strand/Data/HapticPrefs.swift:20"
+      ],
+      "llama.cpp": [
+        "Strand/Screens/CoachView.swift:238",
+        "Strand/Screens/CoachView.swift:864",
+        "Strand/System/AppChangelog.swift:1791"
+      ],
+      "localhost": [
+        "Strand/AI/AICoach.swift:227",
+        "Strand/AI/AIProvider.swift:112",
+        "Strand/AI/AIProvider.swift:160",
+        "Strand/AI/Providers/Custom.swift:5",
+        "Strand/Screens/CoachView.swift:227",
+        "Strand/System/AppChangelog.swift:1791"
+      ],
+      "noop-export.zip": [
+        "Packages/StrandImport/Tests/StrandImportTests/WhoopCsvExporterTests.swift:145"
+      ],
+      "noop-rhythm.csv": [
+        "Strand/Screens/RhythmView.swift:323"
+      ],
+      "noop.activeliftsession": [
+        "Strand/Data/LiftSessionPersistence.swift:96"
+      ],
+      "noop.livesessionsbeta": [
+        "Strand/App/LiveSessionRunner.swift:29"
+      ],
+      "ouracommands.notificationmaskdefault": [
+        "Strand/BLE/OuraLiveSource.swift:2824"
+      ],
+      "p.detail.map": [
+        "Strand/Oura/OuraConnectModel.swift:50"
+      ],
+      "physiologyonly.isempty": [
+        "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/HrOnlyPhysiologyIsolationTests.swift:67"
+      ],
+      "raw.githubusercontent.com": [
+        "Strand/System/AppChangelog.swift:1624"
+      ],
+      "record.circle": [
+        "Strand/Screens/RawDataCollectorView.swift:110"
+      ],
+      "s.skippedendpoints.joined": [
+        "Strand/Oura/OuraConnectModel.swift:56"
+      ],
+      "sessionrestinghr.end": [
+        "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/SleepStagerTests.swift:920"
+      ],
+      "sleep.dismissedsessions": [
+        "Strand/Data/Repository.swift:1638"
+      ],
+      "sportscourt.fill": [
+        "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:409"
+      ],
+      "stop.fill": [
+        "Strand/Liquid/LiveSessionView.swift:71",
+        "Strand/Screens/RawDataCollectorView.swift:107"
+      ],
+      "sync.pendingmanualrequestedat": [
+        "Strand/BLE/BLEManager.swift:4833"
+      ],
+      "today.hostedcards": [
+        "Packages/WhoopStore/Sources/WhoopStore/BackupSettings.swift:62",
+        "Packages/WhoopStore/Sources/WhoopStore/BackupSettings.swift:88",
+        "Packages/WhoopStore/Tests/WhoopStoreTests/BackupSettingsTests.swift:27",
+        "Packages/WhoopStore/Tests/WhoopStoreTests/BackupSettingsTests.swift:47",
+        "Strand/Screens/HostedCards.swift:163",
+        "Strand/Screens/HostedCards.swift:168"
+      ],
+      "today.sectionorder": [
+        "Strand/Liquid/LiquidTodayView.swift:348"
+      ],
+      "whoop.sqlite": [
+        "Packages/NoopLocalAccess/Tests/NoopLocalAccessCoreTests/TemporaryDatabase.swift:9",
+        "Strand/Collect/StorePaths.swift:11"
+      ],
+      "www.apple.com": [
+        "NOOPWatch/Info.plist:2",
+        "NOOPWatchComplications/Info.plist:2",
+        "Strand/Resources/Info.plist:2",
+        "StrandiOS/Resources/Info.plist:2",
+        "StrandiOSWidgets/Info.plist:2"
+      ],
+      "www.garmin.com": [
+        "Packages/StrandImport/Tests/StrandImportTests/ActivityFileImporterTests.swift:38"
+      ],
+      "www.topografix.com": [
+        "Packages/StrandImport/Sources/StrandImport/RouteExporter.swift:62",
+        "Packages/StrandImport/Tests/StrandImportTests/ActivityFileImporterTests.swift:37"
+      ],
+      "www.ultrahuman.com": [
+        "Packages/StrandAnalytics/Sources/StrandAnalytics/BreathProtocolCatalog.swift:8"
+      ],
+      "x-apple.systempreferences": [
+        "Strand/Screens/SmartAlarmView.swift:74"
+      ],
+      "zipfoundation.git": [
+        "Packages/StrandImport/Package.swift:14"
+      ],
+      "\u2026": [
+        "Strand/AI/AIProvider.swift:122",
+        "Strand/AI/AIProvider.swift:175"
+      ]
+    }
+  },
+  "executables": [
+    "Tools/anonymize-ios-app.sh",
+    "Tools/anonymize-macos-app.sh",
+    "Tools/build-v7-artifacts.sh",
+    "Tools/forgejo-release.sh",
+    "Tools/gen_r20_oracle.py",
+    "Tools/prepare-ios-sideload-app.sh",
+    "Tools/prune-stale-branches.py",
+    "Tools/release-contributors.sh",
+    "Tools/release.sh",
+    "Tools/test_prune_stale_branches.py",
+    "Tools/translate-it.py",
+    "Tools/update-altstore-source.sh",
+    "Tools/update-homebrew-cask.sh",
+    "android/gradlew",
+    "docs/protocol-examples/check_source_references.py",
+    "scripts/security/binary.py",
+    "scripts/security/policy.py",
+    "scripts/security/run-all.sh",
+    "scripts/security/sarif_gate.py"
+  ],
+  "scripts": {
+    ".github/CODEOWNERS": "86488c46318e34e0aae62899f30889aae570745e1068ba69204cc52924c80f1d",
+    ".github/workflows/android.yml": "43aaea2f0e02961122581a5e029a3d02fdc73f3ec3b4829f80409eebf0eb5797",
+    ".github/workflows/app-build.yml": "b01ca5a7cefeb4d0ad6eb2b77e4b6e13c12c80f1316108a404ee806a6febd779",
+    ".github/workflows/fork-release.yml": "0116561cde728dea80cbf6a3cd04937459e168a26dd6b579b0b09f45e69f2c65",
+    ".github/workflows/fork-testing-build.yml": "3f2ae00ca629a2d20682784b645d3356d86d2042910b7a52ced45567de64da86",
+    ".github/workflows/i18n-coverage.yml": "99096a08d723c3882559a5b6ee3ea2cfd7a990b9a01f847b234589d58eda44dd",
+    ".github/workflows/noop-security.yml": "f98fea3108f51b48af7293fd0c447e2921197c26892e5006317fb5fd5f61a24d",
+    ".github/workflows/noop-upstream-release.yml": "627d156dbc66dafc5a6ef11448503812bc5c0af035b7b251de17b7b36b13f30f",
+    ".github/workflows/parity-governance.yml": "6eed6aeb806690309bd04cb4bc21717eb498474721590bd68cec16ff024914f4",
+    ".github/workflows/prune-stale-branches.yml": "598bd662a0172730c17e33898ced4dce6ef5d38f4eadff6d147bb6363d36cfc2",
+    ".github/workflows/source-hygiene.yml": "4ff9e3f0d2e95e90c82994edcee194dd4fa0bfa4c876449374861f4ff16782e9",
+    ".github/workflows/swift-packages.yml": "b2c9ec8546d23b96b386657c617c29ba8b4879e124b180ef6c44ff4fa2630848",
+    ".github/workflows/tools-python.yml": "bb221ff0393665f91cc39c663be354daa7393447b7024d657df4cd549aa2af56",
+    ".gitleaksignore": "cfae0df5562dd9d7abf5aac53baa62d5834e439fd7536b760c3378818051594b",
+    "Config/BundleId.xcconfig": "30391404a2f938b655fea13c86089affb5ce4949c27d014b9a887d5fb5a47fe4",
+    "Config/BundleIdSecrets.example.xcconfig": "8f168e1a8a3f4cc85b981c0aa752ae878cf0aae3538721f9cbee0f9b7b487202",
+    "Strand/Oura/OuraConfig.xcconfig": "f4063ca8dcd5836ad3cdf7275abff87318a4488cb72987abd12443ff0e144b3b",
+    "Strand/Oura/OuraSecrets.example.xcconfig": "fb6bac764c6504dda1693cf4a3f36a2d4d31987d4080e542cef45da0724e2431",
+    "Tools/anonymize-ios-app.sh": "dc4e95a88c4f0d246cc058b47cdcadd45ba02263af385538e175d03126468e2d",
+    "Tools/anonymize-macos-app.sh": "96e7b8bcb6a6a993db77ef3e30705634520c48e08f7dfa88ed748ae8d4c23a35",
+    "Tools/appchangelog-gen.py": "d94239d50684466a29874e3d8a620d8d42f6bb24de9d6c73f50a943c45c37929",
+    "Tools/build-v7-artifacts.sh": "fb86ee80089969a9a10db5e2583f9e187c0778d614c05e9f7a2a434e3f7ad91e",
+    "Tools/doc_comment_lint.py": "94b50db90093e2b2b0627fb44f4fcff3751a648d80d6ce43d33c409ced587526",
+    "Tools/forgejo-release.sh": "d831c1e291b11f12d1abc499ced4ce36cba51229edf5588d72a3328d9ce2844b",
+    "Tools/gen_r20_oracle.py": "c8012cd828fc742ccfee84280e20f7223b0983bf755f670195446a36958e58a7",
+    "Tools/google-health-export/export_google_health.py": "d18e8031f53a524ba3dbba688bbfacb07eae035c634032ee06165caa9a4a190a",
+    "Tools/i18n_audit.py": "49bcf5625bf7b5d3bff6dabac242688d70292536511bf8ebfcedd39d1b328eaa",
+    "Tools/issue_ref.py": "efab12f55d9f030bcdb33f23004d2ed6d3554da1b5eac96339fe00da7a53feb6",
+    "Tools/linux-capture/analyze_command_responses.py": "93dc7385ef0da4f43ecd8f389410f0cf80c99b83249b7a0f89597e4c8a6684a0",
+    "Tools/linux-capture/analyze_v25_waveform.py": "e197af2d4a892971856444b4aada6008c51f882ad86e4caa87dba1b22a275dde",
+    "Tools/linux-capture/analyze_v26_waveform.py": "56ed74e911dabb5e652d993518315bbd088d04f1c7cc861b4280836ed043e232",
+    "Tools/linux-capture/capture_io.py": "42ce0e93e8112bbe6e62fce91763434b459088845c27245a3076a3546ec6b1d5",
+    "Tools/linux-capture/correlate_ground_truth.py": "a2321ad99ef6d95462a63ad630cfc31034bdaa745baa1661bd3ee1fa23d2ab04",
+    "Tools/linux-capture/decode_features.py": "f4c2ad562e19b1ca6ded814df5dedc8c1830800d66b94d44e8efb1021ff7b4cf",
+    "Tools/linux-capture/hci_extract.py": "8731a76ae0e3e9ad09fe9add05369f1b1083795008d339f8157e0ad23be0ddd4",
+    "Tools/linux-capture/pair_probe.py": "2384f5e37d66331ae10a5a989f30d9dd99d3ce3fe90eb7b95b9be82f48af513a",
+    "Tools/linux-capture/test_console_encoding.py": "1a3f43946bedf2591c297472810dcef0d2a26e10502e920d8e7cc4b0d7aa6a2e",
+    "Tools/linux-capture/test_correlate_ground_truth.py": "28bfeaaac9c8f63bc82b5d831517c888f3f7990c02f419db9f5dd3154a9e4ff0",
+    "Tools/linux-capture/test_decode_features.py": "34f24c1514a7760ba286365d2e4a0f5b8dbdb570a9916ae4fe9c74014b95b52c",
+    "Tools/linux-capture/test_hci_extract.py": "e08ce53116abd39a8065d0e637c48a8750f48365ba7e5b2f51797487634a55ce",
+    "Tools/linux-capture/test_validate_spo2_candidate.py": "fcd3fd74489668e8bf369f677a8be07143436f823c2e35c11f651c91833351c9",
+    "Tools/linux-capture/test_whoop_activity.py": "2c91624c3dd3cb28c4f003f1a657d0732ead98ee02543b8e41df33c669d1da62",
+    "Tools/linux-capture/test_whoop_frame.py": "f77dd7cd40244219e7d417c4e894c61883a730836b5c782af4606cedfcb842af",
+    "Tools/linux-capture/test_whoop_spot_hrv.py": "4090a6c8d74696480eeaa46816c5c274c21fd00f794df666140b06d1017a6f46",
+    "Tools/linux-capture/test_whoop_sync.py": "41b434274d6ea0d6414b317c38c4e8ae1cd9bf7edcb1e1dc919d94a4126c8d49",
+    "Tools/linux-capture/validate_spo2_candidate.py": "1af43c547f26f696641422c9c3df625169447b7b53f40a260faf1351af065944",
+    "Tools/linux-capture/whoop_activity.py": "cc76a991064adfdaee0fc6da733bdc7d10cc4b5c559c8ea74da3c15f349e79ef",
+    "Tools/linux-capture/whoop_buzz.py": "409cfc163f8cd40e509d5673dbbd05dd59c20b6b87c926c5a82d6a71d5112ea8",
+    "Tools/linux-capture/whoop_capture.py": "15e202c7ad0b36d7866de42605ffa2e98e76df0fbb2cae044cfcc8210cd19d14",
+    "Tools/linux-capture/whoop_frame.py": "17128c074a704a43f4d77c1b48c8354884dd3d4426c69b17e8737a472deba9d1",
+    "Tools/linux-capture/whoop_probe.py": "542eb1122c3a5da2dfce2e9a7173e450d0952dd37654edd7468b9ad089b0d32c",
+    "Tools/linux-capture/whoop_setclock.py": "cfc3bb3953625b546a9fcaaa69bb0425e76de84b0d792bf19eeb2234c1774454",
+    "Tools/linux-capture/whoop_spot_hrv.py": "ab562e2a2f32b681546bce24ef342849a97ee87681f9f66d4b146eae1da662fe",
+    "Tools/linux-capture/whoop_sync.py": "634e484fd7788489f1a7639986b43f5482fc2babefbcbfb8a777c3a3fcf772ef",
+    "Tools/make_brand_pack.py": "fdd6798962d33b12d0ee641bbc82aadb22e1de15e8e0729e38dc8de085a205c1",
+    "Tools/make_contact_sheet.py": "47265fe65d4523d3d0ded79ea04784dccacd4249b2b766309cccdbcf0db74e65",
+    "Tools/make_icon.py": "36d0ad70b590710e6c278ddf91d14c026dec7d12b36b03422392ba1030f42a33",
+    "Tools/make_lift_program_template.py": "427fa79e0e7e44deba39ccbcb026808644e5ada0a9ecf5760761bc3bad38c976",
+    "Tools/parity_harness.py": "a24cf67847a7b11a3586800332742b2e4671c43d30f2d97aedb17a482d5a5075",
+    "Tools/parity_ledger.py": "04262f094012cb707ef05ff6a20392b55749c780a5af7a0093959b255c2a7f16",
+    "Tools/parity_ratchet.py": "126c7b6b759ad1621412cc903c830d4d1772cea542b2f959f7ac910630a41ff9",
+    "Tools/parity_shards.py": "88d9c85e0d6802c33a4f3594784fb5863a46619869ac27436b483f2efd3ee96a",
+    "Tools/prepare-ios-sideload-app.sh": "35ff34a7b94a82404b1c1daac29392dbbac9079076f3f8da62ed0ff11fa792da",
+    "Tools/prune-stale-branches.py": "ef1e15566f191bbf86bc9f2e5901543f8dc308cb5d8c6ce42cf66616c08c0f58",
+    "Tools/refresh-stats-badges.py": "2a49a238a472010d776e44f2de23cccc6a24934811af376581ae2219e18a7be5",
+    "Tools/release-contributors.sh": "fe8d386f3f800d14586ddbbf7f1e2595b5cae14e6de88c013feec077cc67285c",
+    "Tools/release.sh": "bde705b4315c5a60d7100ba42260b9282908109e757e3ff0d002f91296600d4f",
+    "Tools/seed-string-catalog.py": "95edc76c5d47dd731aa3527f32312e24d3cdc334efa99bfb3bfa5b19e217b6a4",
+    "Tools/test_appchangelog_gen.py": "e43cb918d8bd8fe0aa5feac579b2a7310184b61d665f5578798bbbe529c6c59e",
+    "Tools/test_check_source_references.py": "ee36c7a3f51648ee8d02ab3fece1656d606f7436ac7f4c7a87da374f018ba629",
+    "Tools/test_home_i18n.py": "8d40dd8c7d87a94d09e6c6d500327840244e9ec782aaa3099de099c982febe94",
+    "Tools/test_i18n_audit.py": "b6e8c38abfc9d848907f11b22681d0abeb629229610970013421499efc84c2f9",
+    "Tools/test_prune_stale_branches.py": "d1919546126fb1a377d7bac15a4791ac320f688eb4e61b2701657a34366f3f58",
+    "Tools/test_steps_i18n.py": "35cd6de6e684f3832c1173ce827b4bb64255c5ee7736b4b356153df613ff7e21",
+    "Tools/tests/__init__.py": "2506313a56055ee435337cb5a9fd2da0850c27d1bd5b30a038aa8c31c8020781",
+    "Tools/tests/test_parity_arity.py": "1859ca53741a95bf714deedd77876e3bf5372110f2b14fe8aa99e690e86e5986",
+    "Tools/tests/test_parity_artefact_filter.py": "a0e0fc7ced1135be0cebce38e6009881a0f50aae8d2481a26675bf18808c81b7",
+    "Tools/tests/test_parity_disposition_kinds.py": "b190df3552b9d7009c834531500266a18214625440d122ccb25392da014df0cb",
+    "Tools/tests/test_parity_governance_acceptance.py": "bddf62b57364835a63c2da556641f59fe42adb02b8eb7bf6922ceec6228ca85d",
+    "Tools/tests/test_parity_harness.py": "8e5d6a3d3343f0ddb215ac57caadafc48c3134347a22c47721dcd7c26b6b7298",
+    "Tools/tests/test_parity_ledger.py": "7aebae8d9465e6569dd7b13f04e5ac4150b927f555e355309e93c4d9227dc6e4",
+    "Tools/tests/test_rr_legacy_preservation_contract.py": "d9f63acb6833664868077af1cdc0a1ad83dc852d107c4d325e87d6d0a3494df7",
+    "Tools/translate-de.py": "3a7328d229a8970a7f03cb6edd616a65e9b1fe8085b0a29faee9d808b86a817d",
+    "Tools/translate-it.py": "890ed2aa3c6f270bdecafb6069097c1e1d4aa52bc166b65bd461c7918c74bd1e",
+    "Tools/update-altstore-source.sh": "acf153071a3b1a00f255e965fc73d53737921af55be555394bfdb6bf8ba68f87",
+    "Tools/update-homebrew-cask.sh": "1f888896a182223946365547d5485b358345108e7e3dfc0a9e8fda816ec00dbb",
+    "android/gradlew": "fc977a94723af68aaffa4e5d60496fb4aeed1884b6b19e5e2f2fd7612673313d",
+    "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
+    "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
+    "project.yml": "10446c834f59c58f7af1b8e8bb2edcae92a89e4f4fd93d96a06b474340fc5d4a",
+    "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
+    "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
+    "scripts/security/install-analyzed-ios.py": "437504396f534b054af87caf54e36c39366547fa32e0055f9c8acac3fbd9359f",
+    "scripts/security/mobsf_binary_gate.py": "bb6d32917f9e2bddcac4bf78972ef88c6f77d7acf53b1f0e15c1e9aa25e8a2fc",
+    "scripts/security/policy.py": "00fb5d1f5da3bc9338997db868f2fbc200c7b5c1d6eba90616cd6c9957117412",
+    "scripts/security/run-all.sh": "cec85fcd3b19b762590df3c5161029f7a17359a064884b05a03ee4846d6ee7ff",
+    "scripts/security/sarif_gate.py": "72105e91a961c19cc20036c4170a5401169282c097957cc9659148adf6d01d2d",
+    "scripts/security/update-noop-background.sh": "1d9a92131c826b239b806765b47eac0c23a4655c129cfa49358e98f5879632ad"
+  }
+}

@@ -40,6 +40,8 @@ concurrency:
 
 jobs:
   bump:
+    # Prevent this legacy release path from publishing an uninspected iOS IPA on the fork.
+    if: github.repository == 'ryanbr/noop'
     runs-on: ubuntu-latest
     # Pushes the version-bump commit to the dispatched branch and creates the GitHub release.
     permissions:

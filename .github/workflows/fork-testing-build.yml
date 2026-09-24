@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   meta:
+    # This fork must publish iOS artifacts only through noop-security.yml.
+    if: github.repository == 'ryanbr/noop'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.m.outputs.tag }}
@@ -234,7 +236,7 @@ jobs:
   # (or any other ref) is left alone.
   cleanup:
     needs: [meta, android, macos, ios]
-    if: ${{ always() && github.ref_type == 'branch' && github.ref_name == 'noop-staging' }}
+    if: ${{ always() && github.repository == 'ryanbr/noop' && github.ref_type == 'branch' && github.ref_name == 'noop-staging' }}
     runs-on: ubuntu-latest
     steps:
       - name: Delete the disposable staging branch

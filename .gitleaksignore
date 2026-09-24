@@ -1,0 +1,25 @@
+# Reviewed upstream-history false positives: these are local UserDefaults/SharedPreferences keys or test key names, not credentials.
+# See docs/SECURITY_PIPELINE.md and PR #1. New fingerprints must be reviewed separately.
+# Packages/WhoopProtocol/Tests/WhoopProtocolTests/DeviceConfigReadProbeTests.swift:211 — local preference/test key
+4619a9477ec7074af7474ca27d517db00a085751:Packages/WhoopProtocol/Tests/WhoopProtocolTests/DeviceConfigReadProbeTests.swift:generic-api-key:211
+# android/app/src/main/java/com/noop/ble/PuffinExperiment.kt:260 — local preference/test key
+7ab0588909091a2d16440302c97d6f801f9b9f31:android/app/src/main/java/com/noop/ble/PuffinExperiment.kt:generic-api-key:260
+# android/app/src/main/java/com/noop/ble/PuffinExperiment.kt:165 — local preference/test key
+cef286913cd1340fec2dc52f819b08c1326b3015:android/app/src/main/java/com/noop/ble/PuffinExperiment.kt:generic-api-key:165
+# android/app/src/main/java/com/noop/ui/MainActivity.kt:610 — local preference/test key
+43de110f3316179e221dfa889e1d9b5720c8a305:android/app/src/main/java/com/noop/ui/MainActivity.kt:generic-api-key:610
+# android/app/src/main/java/com/noop/ui/JournalCatalog.kt:290 — local preference/test key
+32819ee1ff2490d452c65220d3bd32704744dd83:android/app/src/main/java/com/noop/ui/JournalCatalog.kt:generic-api-key:290
+# android/app/src/main/java/com/noop/testcentre/TestCentre.kt:82 — local preference/test key
+63a913f99660de75fc726b7482c0f3627ea8cfb3:android/app/src/main/java/com/noop/testcentre/TestCentre.kt:generic-api-key:82
+# Strand/System/TestCentre.swift:16 — local preference/test key
+f5522a2de5206806c3c9f28991d33fa655267a93:Strand/System/TestCentre.swift:generic-api-key:16
+# StrandTests/TestCentreActivationTests.swift:24 — local preference/test key
+f5522a2de5206806c3c9f28991d33fa655267a93:StrandTests/TestCentreActivationTests.swift:generic-api-key:24
+# StrandTests/TestCentreActivationTests.swift:69 — local preference/test key
+f5522a2de5206806c3c9f28991d33fa655267a93:StrandTests/TestCentreActivationTests.swift:generic-api-key:69
+# android/app/src/main/java/com/noop/ui/MainActivity.kt:562 — local preference/test key
+2b1ddaff308d3b5324c07c0ce60f1cc335eda179:android/app/src/main/java/com/noop/ui/MainActivity.kt:generic-api-key:562
+# scripts/security/baselines/source.json:844,846 — SHA-256 digests of tracked xcconfig files, not credentials.
+ed7e8a66de79f0be44fe4461fd64961a6f6aebf6:scripts/security/baselines/source.json:generic-api-key:844
+ed7e8a66de79f0be44fe4461fd64961a6f6aebf6:scripts/security/baselines/source.json:generic-api-key:846

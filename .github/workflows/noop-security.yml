@@ -1,0 +1,515 @@
+name: NOOP security gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: noop-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-policy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Review NOOP source policy
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$BASE_REF" ]]; then
+            python3 scripts/security/policy.py check --report build/security/source-policy.json --base-ref "$BASE_REF"
+          else
+            ./scripts/security/run-all.sh
+          fi
+      - name: Dependency Review for PR changes
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: source-policy
+          path: build/security/source-policy.json
+          if-no-files-found: error
+          retention-days: 30
+
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install pinned Gitleaks CLI
+        run: |
+          set -euo pipefail
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Scan committed history and sanitize report
+        run: |
+          set -euo pipefail
+          mkdir -p build/security
+          raw="$(mktemp)"
+          trap 'rm -f "$raw"' EXIT
+          status=0
+          gitleaks git --no-banner --redact=100 --report-format json --report-path "$raw" . >/dev/null 2>&1 || status=$?
+          python3 - "$raw" <<'PY'
+          import json, pathlib, sys
+          raw = pathlib.Path(sys.argv[1])
+          if not raw.is_file():
+              raise SystemExit('Gitleaks failed without a report')
+          findings = json.loads(raw.read_text())
+          safe = [{k: row.get(k) for k in ('RuleID', 'File', 'StartLine', 'Commit', 'Fingerprint')} for row in findings]
+          pathlib.Path('build/security/gitleaks.json').write_text(json.dumps(safe, indent=2) + '\n')
+          print(f'Gitleaks: {len(safe)} findings (secret values withheld)')
+          PY
+          if [[ "$status" -gt 1 ]]; then echo 'Gitleaks scanner error'; exit "$status"; fi
+          if [[ "$status" -eq 1 ]]; then echo 'Gitleaks found potential secrets'; exit 1; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: gitleaks-sanitized
+          path: build/security/gitleaks.json
+          if-no-files-found: error
+          retention-days: 30
+
+  ios-static:
+    needs: secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install pinned mobsfscan
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/noop-mobsfscan
+          /tmp/noop-mobsfscan/bin/pip install --disable-pip-version-check 'mobsfscan==1.0.0' >/dev/null
+      - name: Scan Swift and iOS configuration
+        run: |
+          set -euo pipefail
+          mkdir -p build/security
+          /tmp/noop-mobsfscan/bin/mobsfscan --type ios --sarif --no-fail -o build/security/mobsfscan.sarif Strand StrandiOS StrandiOSShared StrandiOSWidgets NOOPWatch NOOPWatchComplications Packages project.yml
+          python3 scripts/security/sarif_gate.py build/security --report build/security/mobsfscan-gate.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: mobsfscan
+          path: build/security/
+          if-no-files-found: error
+          retention-days: 30
+
+  build-unsigned:
+    needs: [source-policy, secrets]
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Generate the actual Xcode project
+        env:
+          IOS_BUNDLE_ID_PREFIX: ${{ vars.IOS_BUNDLE_ID_PREFIX }}
+        run: |
+          set -euo pipefail
+          arch -arm64 brew install xcodegen
+          if [[ -n "$IOS_BUNDLE_ID_PREFIX" ]]; then
+            [[ "$IOS_BUNDLE_ID_PREFIX" =~ ^[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+$ ]]
+            printf 'BUNDLE_ID_PREFIX = %s\n' "$IOS_BUNDLE_ID_PREFIX" > Config/BundleIdSecrets.xcconfig
+          fi
+          xcodegen generate
+      - name: Resolve only locked Swift packages and build unsigned device app
+        run: |
+          set -euo pipefail
+          ( while sleep 30; do printf 'Release build: %s log lines\n' "$(wc -l < build-xcode.log)"; done ) &
+          heartbeat_pid=$!
+          trap 'kill "$heartbeat_pid" 2>/dev/null || true' EXIT
+          xcodebuild -project Strand.xcodeproj -scheme NOOPiOS -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+            -clonedSourcePackagesDirPath build/spm -disableAutomaticPackageResolution \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' build \
+            > build-xcode.log 2>&1 || { tail -n 100 build-xcode.log; exit 1; }
+      - name: Inspect unsigned app and create immutable handoff
+        run: |
+          set -euo pipefail
+          # The iOS target's PRODUCT_NAME is "NOOP Staging". Normalize only the
+          # outer unsigned bundle directory for the IPA/artifact handoff.
+          mv 'build/dd/Build/Products/Release-iphoneos/NOOP Staging.app' 'build/dd/Build/Products/Release-iphoneos/NOOP.app'
+          app='build/dd/Build/Products/Release-iphoneos/NOOP.app'
+          python3 scripts/security/binary.py "$app" --report build/security/binary.json
+          tar -czf build/security/unsigned-app.tar.gz -C build/dd/Build/Products/Release-iphoneos NOOP.app
+          cp scripts/security/baselines/source.json build/security/source-baseline.json
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, platform, subprocess
+          root = pathlib.Path('build/security')
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          manifest = {
+              'commit': os.environ['GITHUB_SHA'],
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'archive_sha256': sha(root / 'unsigned-app.tar.gz'),
+              'binary_report_sha256': sha(root / 'binary.json'),
+              'source_baseline_sha256': sha('scripts/security/baselines/source.json'),
+              'bundle_id_prefix': os.environ.get('IOS_BUNDLE_ID_PREFIX') or 'com.noopapp',
+              'package_resolved_sha256': sha('Strand.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'),
+              'xcode': subprocess.check_output(['xcodebuild','-version'], text=True).strip(),
+              'swift': subprocess.check_output(['swift','--version'], text=True).strip(),
+              'macos': platform.platform(),
+              'runner': os.environ.get('ImageOS', ''),
+          }
+          (root / 'handoff.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+          PY
+        env:
+          IOS_BUNDLE_ID_PREFIX: ${{ vars.IOS_BUNDLE_ID_PREFIX }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: analyzed-unsigned-ios
+          path: |
+            build/security/unsigned-app.tar.gz
+            build/security/handoff.json
+            build/security/binary.json
+            build/security/source-baseline.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: build-security-report
+          path: build/security/binary.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  codeql-swift:
+    needs: [source-policy, secrets]
+    runs-on: macos-26
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Initialize CodeQL Swift
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-extended
+      - name: Generate the actual Xcode project
+        env:
+          IOS_BUNDLE_ID_PREFIX: ${{ vars.IOS_BUNDLE_ID_PREFIX }}
+        run: |
+          set -euo pipefail
+          arch -arm64 brew install xcodegen
+          if [[ -n "$IOS_BUNDLE_ID_PREFIX" ]]; then
+            [[ "$IOS_BUNDLE_ID_PREFIX" =~ ^[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+$ ]]
+            printf 'BUNDLE_ID_PREFIX = %s\n' "$IOS_BUNDLE_ID_PREFIX" > Config/BundleIdSecrets.xcconfig
+          fi
+          xcodegen generate
+      - name: Build actual iOS project for Swift extraction
+        run: |
+          set -euo pipefail
+          ( while sleep 30; do printf 'CodeQL build: %s log lines\n' "$(wc -l < build-codeql.log)"; done ) &
+          heartbeat_pid=$!
+          trap 'kill "$heartbeat_pid" 2>/dev/null || true' EXIT
+          xcodebuild -project Strand.xcodeproj -scheme NOOPiOS -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/codeql-dd \
+            -clonedSourcePackagesDirPath build/spm -disableAutomaticPackageResolution -jobs 3 \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            COMPILATION_CACHE_ENABLE_CACHING=NO SWIFT_ENABLE_COMPILE_CACHE=NO SWIFT_USE_INTEGRATED_DRIVER=NO build \
+            > build-codeql.log 2>&1 || { tail -n 100 build-codeql.log; exit 1; }
+      - name: Analyze Swift with CodeQL
+        id: codeql
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          output: build/security/codeql
+          upload: never
+      - name: Enforce serious CodeQL finding policy
+        run: python3 scripts/security/sarif_gate.py build/security/codeql --report build/security/codeql-gate.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: codeql-report
+          path: |
+            build/security/codeql-gate.json
+            build/security/codeql/
+          if-no-files-found: warn
+          retention-days: 30
+
+  security-gate:
+    if: always()
+    needs: [source-policy, secrets, ios-static, build-unsigned, codeql-swift]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: source-policy
+          path: reports/source
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: gitleaks-sanitized
+          path: reports/secrets
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: mobsfscan
+          path: reports/static
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: build-security-report
+          path: reports/build
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: codeql-report
+          path: reports/codeql
+      - name: Check every mandatory job
+        env:
+          SOURCE: ${{ needs.source-policy.result }}
+          SECRETS: ${{ needs.secrets.result }}
+          STATIC: ${{ needs.ios-static.result }}
+          BUILD: ${{ needs.build-unsigned.result }}
+          CODEQL: ${{ needs.codeql-swift.result }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib
+          def read(path):
+              p = pathlib.Path(path)
+              return json.loads(p.read_text()) if p.is_file() else None
+          source = read('reports/source/source-policy.json')
+          secrets = read('reports/secrets/gitleaks.json')
+          static = read('reports/static/mobsfscan-gate.json')
+          codeql = read('reports/codeql/codeql-gate.json')
+          binary = read('reports/build/binary.json')
+          complete = all(item is not None for item in (source, secrets, static, codeql, binary))
+          def count(items): return str(len(items)) if items is not None else 'report unavailable'
+          source_detail = 'report unavailable'
+          if source:
+              source_detail = ', '.join(f'{key}: {count(source[key]["changed"] + source[key]["added"] + source[key]["removed"])}' for key in ('capabilities', 'dependencies', 'scripts'))
+              source_detail += f', new hosts: {len(source["endpoints"]["runtime"]["added"]) + len(source["endpoints"]["build"]["added"])}'
+          rows = [
+              ('Source capabilities, endpoints, scripts, dependencies and Dependency Review', os.environ['SOURCE'], source_detail),
+              ('Gitleaks history', os.environ['SECRETS'], f'{count(secrets)} findings'),
+              ('mobsfscan Swift/iOS', os.environ['STATIC'], f'{count(static["serious_findings"] if static else None)} serious findings'),
+              ('CodeQL Swift', os.environ['CODEQL'], f'{count(codeql["serious_findings"] if codeql else None)} serious findings'),
+              ('Unsigned app and binary policy', os.environ['BUILD'], f'{count(binary["failures"] if binary else None)} policy failures'),
+          ]
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('### NOOP security gate\n\n| Check | Result | Important changes |\n|---|---|---|\n')
+              for row in rows:
+                  out.write('| ' + ' | '.join(row) + ' |\n')
+          if all(os.environ[key] == 'success' for key in ('SOURCE', 'SECRETS', 'STATIC', 'BUILD', 'CODEQL')) and not complete:
+              raise SystemExit('A mandatory security report is unavailable')
+          PY
+          [[ "$SOURCE" == success && "$SECRETS" == success && "$STATIC" == success && "$BUILD" == success && "$CODEQL" == success ]]
+
+  mobsf-binary:
+    # Scan candidate stable builds before explicit local approval.
+    if: github.event_name == 'workflow_dispatch'
+    needs: [security-gate, build-unsigned]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: analyzed-unsigned-ios
+          path: handoff
+      - name: Scan analyzed unsigned IPA with pinned MobSF container
+        run: |
+          set -euo pipefail
+          mkdir -p build/security/mobsf-binary Payload
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path('handoff')
+          manifest = json.loads((root / 'handoff.json').read_text())
+          assert manifest['commit'] == os.environ['GITHUB_SHA']
+          assert manifest['repository'] == os.environ['GITHUB_REPOSITORY']
+          assert hashlib.sha256((root / 'unsigned-app.tar.gz').read_bytes()).hexdigest() == manifest['archive_sha256']
+          PY
+          tar -xzf handoff/unsigned-app.tar.gz -C Payload
+          zip -qry build/security/mobsf-binary/NOOP-unsigned.ipa Payload
+          api_key="$(openssl rand -hex 32)"
+          container="$(docker run -d --rm -p 127.0.0.1:8000:8000 -e MOBSF_API_KEY="$api_key" opensecurity/mobile-security-framework-mobsf@sha256:af94f81f8b13872cdf556327fab58f52d446299fe153be6e1eeec177f31b503b)"
+          trap 'docker stop "$container" >/dev/null 2>&1 || true' EXIT
+          ready=0
+          for ((attempt=1; attempt<=90; attempt++)); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:8000/; then ready=1; break; fi
+            sleep 5
+          done
+          [[ "$ready" == 1 ]] || { echo 'MobSF did not start'; exit 1; }
+          curl --fail --silent --show-error --max-time 120 -H "Authorization: $api_key" \
+            -F 'file=@build/security/mobsf-binary/NOOP-unsigned.ipa' \
+            http://127.0.0.1:8000/api/v1/upload -o build/security/mobsf-binary/upload.json
+          scan_hash="$(jq -er '.hash' build/security/mobsf-binary/upload.json)"
+          scan_type="$(jq -er '.scan_type' build/security/mobsf-binary/upload.json)"
+          file_name="$(jq -er '.file_name' build/security/mobsf-binary/upload.json)"
+          curl --fail --silent --show-error --max-time 1200 -H "Authorization: $api_key" \
+            --data-urlencode "hash=$scan_hash" --data-urlencode "scan_type=$scan_type" \
+            --data-urlencode "file_name=$file_name" \
+            http://127.0.0.1:8000/api/v1/scan -o build/security/mobsf-binary/scan.json
+          jq -e 'type == "object" and (has("error") | not)' build/security/mobsf-binary/scan.json >/dev/null
+          curl --fail --silent --show-error --max-time 120 -H "Authorization: $api_key" \
+            --data-urlencode "hash=$scan_hash" \
+            http://127.0.0.1:8000/api/v1/report_json -o build/security/mobsf-binary/report.json
+          jq -e 'type == "object" and (has("error") | not) and (.report? != "Report not Found")' build/security/mobsf-binary/report.json >/dev/null
+          bundle_id="$(jq -er '.bundle_id_prefix' handoff/handoff.json).noop"
+          python3 scripts/security/mobsf_binary_gate.py build/security/mobsf-binary/report.json \
+            --bundle-id "$bundle_id" --ipa build/security/mobsf-binary/NOOP-unsigned.ipa \
+            --output build/security/mobsf-binary/gate.json
+          rm -f build/security/mobsf-binary/NOOP-unsigned.ipa
+          echo '### MobSF binary scan: PASS; see mobsf-binary report artifact' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: mobsf-binary-report
+          path: build/security/mobsf-binary/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  trusted-signing:
+    # No PR or ordinary push can enter this job. Configure required reviewers on this Environment.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.ENABLE_SIGNING == 'true'
+    needs: [security-gate, build-unsigned]
+    runs-on: macos-26
+    environment: trusted-signing
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: analyzed-unsigned-ios
+          path: handoff
+      - name: Verify run, commit, artifact and structure before credentials
+        env:
+          EXPECTED_PREFIX: ${{ vars.IOS_BUNDLE_ID_PREFIX }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, tarfile
+          root = pathlib.Path('handoff')
+          handoff = json.loads((root / 'handoff.json').read_text())
+          binary = json.loads((root / 'binary.json').read_text())
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          assert handoff['commit'] == os.environ['GITHUB_SHA'], 'commit mismatch'
+          assert handoff['repository'] == os.environ['GITHUB_REPOSITORY'], 'repository mismatch'
+          assert handoff['bundle_id_prefix'] == (os.environ['EXPECTED_PREFIX'] or 'com.noopapp'), 'bundle prefix mismatch'
+          assert handoff['archive_sha256'] == sha(root / 'unsigned-app.tar.gz'), 'archive hash mismatch'
+          assert handoff['binary_report_sha256'] == sha(root / 'binary.json'), 'binary report hash mismatch'
+          assert handoff['source_baseline_sha256'] == sha(root / 'source-baseline.json'), 'baseline hash mismatch'
+          assert binary['status'] == 'PASS' and not binary['failures'], 'binary analysis did not pass'
+          expected = {'.', 'PlugIns/NOOPWidgets.appex', 'Watch/NOOPWatch.app', 'Watch/NOOPWatch.app/PlugIns/NOOPWatchComplications.appex'}
+          assert set(binary['bundles']) == expected, 'unexpected bundle set'
+          with tarfile.open(root / 'unsigned-app.tar.gz', 'r:gz') as archive:
+              for member in archive:
+                  path = pathlib.PurePosixPath(member.name)
+                  assert path.parts[0] == 'NOOP.app' and '..' not in path.parts and not path.is_absolute(), 'unsafe tar path'
+                  assert member.isfile() or member.isdir(), 'tar contains link or special file'
+              archive.extractall('handoff/extracted')
+          print('Verified analyzed artifact, commit, hashes and bundle structure')
+          PY
+      - name: Sign exact analyzed app with temporary keychain
+        env:
+          P12_B64: ${{ secrets.SIGNING_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.SIGNING_P12_PASSWORD }}
+          IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
+          PROFILE_APP: ${{ secrets.PROFILE_NOOP_IOS_BASE64 }}
+          PROFILE_WIDGET: ${{ secrets.PROFILE_NOOP_WIDGET_BASE64 }}
+          PROFILE_WATCH: ${{ secrets.PROFILE_NOOP_WATCH_BASE64 }}
+          PROFILE_COMPLICATION: ${{ secrets.PROFILE_NOOP_COMPLICATION_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          tmp="$(mktemp -d)"
+          keychain="$tmp/noop.keychain-db"
+          password="$(openssl rand -hex 32)"
+          cleanup() { security delete-keychain "$keychain" >/dev/null 2>&1 || true; rm -rf "$tmp"; }
+          trap cleanup EXIT
+          [[ -n "$P12_B64" && -n "$P12_PASSWORD" && -n "$IDENTITY" && -n "$PROFILE_APP" && -n "$PROFILE_WIDGET" && -n "$PROFILE_WATCH" && -n "$PROFILE_COMPLICATION" ]]
+          printf '%s' "$P12_B64" | base64 -D > "$tmp/signing.p12"
+          security create-keychain -p "$password" "$keychain" >/dev/null
+          security unlock-keychain -p "$password" "$keychain" >/dev/null
+          security set-keychain-settings -lut 21600 "$keychain"
+          security import "$tmp/signing.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign >/dev/null
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          python3 - "$tmp" <<'PY'
+          import base64, json, os, pathlib, plistlib, subprocess, sys
+          tmp = pathlib.Path(sys.argv[1])
+          app = pathlib.Path('handoff/extracted/NOOP.app')
+          source = json.loads(pathlib.Path('handoff/source-baseline.json').read_text())['capabilities']
+          prefix = json.loads(pathlib.Path('handoff/handoff.json').read_text())['bundle_id_prefix']
+          parts = [
+              ('Watch/NOOPWatch.app/PlugIns/NOOPWatchComplications.appex', 'NOOPWatchComplications', 'PROFILE_COMPLICATION'),
+              ('Watch/NOOPWatch.app', 'NOOPWatch', 'PROFILE_WATCH'),
+              ('PlugIns/NOOPWidgets.appex', 'NOOPiOSWidgets', 'PROFILE_WIDGET'),
+              ('.', 'NOOPiOS', 'PROFILE_APP'),
+          ]
+          for n, (rel, target, env) in enumerate(parts):
+              bundle = app if rel == '.' else app / rel
+              profile = tmp / f'{n}.mobileprovision'
+              profile.write_bytes(base64.b64decode(os.environ[env], validate=True))
+              decoded = subprocess.check_output(['security', 'cms', '-D', '-i', str(profile)])
+              data = plistlib.loads(decoded)
+              info = plistlib.loads((bundle / 'Info.plist').read_bytes())
+              bundle_id = info['CFBundleIdentifier']
+              ent = data['Entitlements']
+              team = data['TeamIdentifier'][0]
+              assert ent['application-identifier'] == f'{team}.{bundle_id}', f'profile app ID mismatch: {target}'
+              assert ent.get('get-task-allow') is False, f'development profile rejected: {target}'
+              requested = source[target]['entitlements']['values']
+              requested = json.loads(json.dumps(requested).replace('$(BUNDLE_ID_PREFIX)', prefix).replace('$(APP_GROUP_ID)', f'group.{prefix}.noop.staging'))
+              for key, value in requested.items():
+                  assert ent.get(key) == value, f'profile capability mismatch: {target}: {key}'
+              allowed = {**requested, 'application-identifier': ent['application-identifier'], 'com.apple.developer.team-identifier': team, 'get-task-allow': False}
+              if 'keychain-access-groups' in ent:
+                  allowed['keychain-access-groups'] = ent['keychain-access-groups']
+              (bundle / 'embedded.mobileprovision').write_bytes(profile.read_bytes())
+              (tmp / f'{n}.entitlements').write_bytes(plistlib.dumps(allowed))
+              print(f'Validated provisioning capabilities for {target}')
+          PY
+          app='handoff/extracted/NOOP.app'
+          codesign --force --sign "$IDENTITY" --keychain "$keychain" --entitlements "$tmp/0.entitlements" "$app/Watch/NOOPWatch.app/PlugIns/NOOPWatchComplications.appex"
+          codesign --force --sign "$IDENTITY" --keychain "$keychain" --entitlements "$tmp/1.entitlements" "$app/Watch/NOOPWatch.app"
+          codesign --force --sign "$IDENTITY" --keychain "$keychain" --entitlements "$tmp/2.entitlements" "$app/PlugIns/NOOPWidgets.appex"
+          codesign --force --sign "$IDENTITY" --keychain "$keychain" --entitlements "$tmp/3.entitlements" "$app"
+          codesign --verify --deep --strict "$app"
+          mkdir -p Payload
+          cp -R "$app" Payload/NOOP.app
+          zip -qry NOOP-signed.ipa Payload
+          shasum -a 256 NOOP-signed.ipa > NOOP-signed.ipa.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: noop-signed-ios
+          path: |
+            NOOP-signed.ipa
+            NOOP-signed.ipa.sha256
+          if-no-files-found: error
+          retention-days: 7
