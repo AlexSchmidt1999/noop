@@ -32,7 +32,8 @@ The private signing key never enters GitHub.
 4. Run `python3 scripts/security/enable-background-install.py` while logged in. Its
    user LaunchAgent checks the cached approved build every six hours. The log is
    `build/noop-background.log`; failures also trigger a macOS notification. Dispatch
-   `Update upstream NOOP release` on `main` once to prepare the first candidate.
+   `Update upstream NOOP release` on `main` to check immediately. A candidate is
+   prepared only when upstream has a newer release tag.
 
 ## Approving a new version
 

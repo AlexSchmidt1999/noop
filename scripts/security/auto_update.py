@@ -136,6 +136,13 @@ def inspect_pending_candidate(sha):
         print(f"Candidate {sha} has security run {run['id']} ({run['status']}/{run.get('conclusion')}); awaiting owner approval")
 
 
+def prepare_if_new_release(tag, approved_tag):
+    if tag != approved_tag:
+        prepare_candidate(tag)
+    else:
+        print(f"No new upstream release ({tag})")
+
+
 def cache_approved_current():
     """Cache one already installed, owner-approved main commit after its scan passes."""
     if not PENDING_CURRENT.exists():
@@ -185,7 +192,6 @@ def main():
     elif git("branch", "--show-current") != "main":
         raise RuntimeError("The local checkout must be on main")
     git("merge", "--ff-only", "origin/main")
-    main_sha = git("rev-parse", "HEAD")
     pending = candidate_sha()
     if args.promote_run:
         if not pending:
@@ -198,14 +204,7 @@ def main():
         return
     tag = release_tag()
     approved_tag = (ROOT / "Config/UpstreamRelease.txt").read_text().strip()
-    if tag != approved_tag:
-        prepare_candidate(tag)
-        return
-    run = workflow_run(BRANCH, main_sha) or workflow_run("main", main_sha)
-    if run is None:
-        dispatch("main")
-    elif run["status"] == "completed" and run["conclusion"] != "success":
-        raise RuntimeError(f"Security run {run['id']} did not pass: {run['conclusion']}")
+    prepare_if_new_release(tag, approved_tag)
 
 
 if __name__ == "__main__":
