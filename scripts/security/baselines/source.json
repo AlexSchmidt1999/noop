@@ -683,6 +683,6 @@
     "scripts/security/run-all.sh": "cec85fcd3b19b762590df3c5161029f7a17359a064884b05a03ee4846d6ee7ff",
     "scripts/security/sarif_gate.py": "72105e91a961c19cc20036c4170a5401169282c097957cc9659148adf6d01d2d",
     "scripts/security/test_auto_update.py": "bc9e823e23570e4908571a146a6ea9676152c11c682eb738e0df9c2b6423cb67",
-    "scripts/security/update-noop-background.sh": "ab5459f60c2db503aad6cb7aa13e6f668a7739f48b6b4e248e5d511cf94dc888"
+    "scripts/security/update-noop-background.sh": "5dfc11e94f06e7a35ddc2c41c3e22a16d412806070b28f73bb8dfcf9f3fac4da"
   }
 }
