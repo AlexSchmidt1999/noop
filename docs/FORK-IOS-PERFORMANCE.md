@@ -16,6 +16,8 @@ Two approximately 21-second Instruments **Animation Hitches** captures were made
 on an iPhone 17 Pro Max running iOS 27.0 while manually scrolling Today. The first
 used the fork before the solid panel change; the second used commit `a96ea9fc`.
 Both already included the HealthKit, idle-update, and lazy-section changes above.
+The owner confirmed that **Reduce motion in NOOP was already enabled** in the first
+capture, so the looping sky and liquid-gauge animations do not explain its hitches.
 
 | Metric | Before solid panels | After solid panels |
 |---|---:|---:|
@@ -27,16 +29,19 @@ Both already included the HealthKit, idle-update, and lazy-section changes above
 
 The captures support the user's report that scrolling feels better. Manual scroll
 speed and visible content were not controlled, so these figures describe two device
-sessions rather than a repeatable benchmark or a guarantee on other iPhones. The
-raw traces are not committed because they may contain personal device and app data.
+sessions rather than a repeatable benchmark or a guarantee on other iPhones. A third
+capture with Reduce Motion still enabled recorded 16 hitches but a different
+offscreen-pass distribution. This warns against treating one scroll as a controlled
+comparison. The raw traces are not committed because they may contain personal
+device and app data.
 
 ## Remaining work
 
-The second capture still recorded 71 hitches, with most labeled as potentially
-expensive app updates. Today also has a 20 Hz animated sky and live hero canvases.
-The next useful experiment is a controlled capture with motion on and off while
-scrolling the same sections, followed by a targeted SwiftUI invalidation profile.
-Do not slow data refresh merely to hide animation work: a less current screen can
-feel laggy even if it renders fewer frames. Keep WHOOP and Apple Health ingestion
-semantics separate from cosmetic animation changes, and measure battery use over
+The second capture still recorded 71 hitches; 53 were labeled as potentially
+expensive app updates. Its time profile shows work in SwiftUI's view graph and in
+the classic `TodayView`. The next useful experiment is a controlled capture of the
+same visible sections while inspecting which state changes invalidate that view,
+especially during a refresh. Slowing data refresh blindly would make the screen
+less current without establishing the cause. Keep WHOOP and Apple Health ingestion
+semantics separate from cosmetic rendering changes, and measure battery use over
 a longer device session before claiming a battery improvement.
