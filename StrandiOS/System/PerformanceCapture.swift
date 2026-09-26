@@ -35,7 +35,8 @@ final class PerformanceCapture: ObservableObject {
         foreground = UIApplication.shared.applicationState == .active
         isRecording = true
         reportURL = nil
-        note("session_start build=\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown") "
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        note("session_start build=\(build) "
              + "ios=\(ProcessInfo.processInfo.operatingSystemVersionString) device=\(UIDevice.current.model)")
 
         syncObserver = model.live.$backfilling.removeDuplicates().dropFirst().sink { [weak self] syncing in
