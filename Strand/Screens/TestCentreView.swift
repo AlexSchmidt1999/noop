@@ -21,6 +21,11 @@ struct TestCentreView: View {
 
     /// The Report orchestrator: assembles the redacted bundle, runs the mandatory review gate, shares.
     @StateObject private var report = TestCentreReport()
+    #if os(iOS)
+    @ObservedObject private var performance = PerformanceCapture.shared
+    @State private var showingPerformanceReview = false
+    @State private var showingClearPerformanceConfirm = false
+    #endif
 
     /// Re-read activation on appear so a toggle flip elsewhere reflects here.
     @State private var refreshToken = 0
@@ -166,6 +171,9 @@ struct TestCentreView: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
                 domainModesCard.staggeredAppear(index: 0)
                 diagnosticToolsCard.staggeredAppear(index: 1)
+                #if os(iOS)
+                performanceCard
+                #endif
                 if is5MG { rawDataCollectorCard.staggeredAppear(index: 2) }
                 if is5MG { fiveMGProtocolDiagnosticsCard.staggeredAppear(index: 3) }
                 if ouraPaired { ouraCard.staggeredAppear(index: 2) }
@@ -177,10 +185,25 @@ struct TestCentreView: View {
         .onAppear {
             refreshToken &+= 1
             ScheduledDebugExport.activateIfEnabled()
+            #if os(iOS)
+            performance.reloadLatest()
+            #endif
         }
         .sheet(item: $report.pending) { _ in
             ReportReviewSheet(report: report)
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingPerformanceReview) {
+            performanceReview
+        }
+        .confirmationDialog("Clear performance reports?",
+                            isPresented: $showingClearPerformanceConfirm, titleVisibility: .visible) {
+            Button("Clear reports", role: .destructive) { performance.clearReports() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This removes the locally saved performance reports.")
+        }
+        #endif
         .confirmationDialog("Recalibrate your Charge baseline?",
                             isPresented: $showRecalibrateConfirm, titleVisibility: .visible) {
             Button("Recalibrate") { recalibrateCharge() }
@@ -203,6 +226,70 @@ struct TestCentreView: View {
     }
 
     // MARK: - Section 1: Domain test modes (rendered from the registry projection)
+
+    #if os(iOS)
+    private var performanceCard: some View {
+        NoopCard {
+            VStack(alignment: .leading, spacing: NoopMetrics.space3) {
+                Text("IPHONE PERFORMANCE")
+                    .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                    .foregroundStyle(StrandPalette.textTertiary)
+                Text("Record frame times and refresh events for up to 30 minutes while using NOOP. The report stays on this iPhone until you share it.")
+                    .font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary)
+                if performance.isRecording {
+                    Text("Recording across screens")
+                        .font(StrandFont.caption).foregroundStyle(StrandPalette.accent)
+                    NoopButton("Stop recording", systemImage: "stop.circle", kind: .secondary) {
+                        performance.stop()
+                    }
+                } else {
+                    NoopButton("Record 30 minutes", systemImage: "record.circle", kind: .secondary) {
+                        performance.start(model: model)
+                    }
+                    .disabled(TestCentre.active(.display))
+                    if TestCentre.active(.display) {
+                        Text("Turn off Display & Performance test mode before starting this recording.")
+                            .font(StrandFont.caption).foregroundStyle(StrandPalette.textTertiary)
+                    }
+                }
+                if performance.reportURL != nil, !performance.isRecording {
+                    NoopButton("Review performance report", systemImage: "doc.text", kind: .secondary) {
+                        showingPerformanceReview = true
+                    }
+                    NoopButton("Clear performance reports", systemImage: "trash", kind: .secondary) {
+                        showingClearPerformanceConfirm = true
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var performanceReview: some View {
+        if let url = performance.reportURL {
+            NavigationStack {
+                ScrollView {
+                    Text((try? String(contentsOf: url, encoding: .utf8)) ?? "Report unavailable")
+                        .font(StrandFont.mono)
+                        .foregroundStyle(StrandPalette.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(NoopMetrics.space3)
+                }
+                .background(StrandPalette.surfaceBase)
+                .navigationTitle("Performance report")
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Done") { showingPerformanceReview = false }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ShareLink(item: url) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder private var domainModesCard: some View {
         NoopCard {
@@ -928,12 +1015,18 @@ private struct TestModeRow: View {
                     .labelsHidden()
                     .tint(StrandPalette.accent)
                     .accessibilityLabel("\(mode.title) test mode")
+                    #if os(iOS)
+                    .disabled(mode.domain == .display && PerformanceCapture.shared.isRecording)
+                    #endif
                     .onChangeCompat(of: on) { isOn in
                         if isOn { TestCentre.activate(mode.domain) } else { TestCentre.deactivate(mode.domain) }
                         // Display & Performance owns a live frame monitor. It must run ONLY while the mode
                         // is on: start it on toggle-on (after wiring its sink to the redacting .display
                         // log), tear it down on toggle-off so no display link survives. Zero-cost when off.
                         if mode.domain == .display {
+                            #if os(iOS)
+                            guard !PerformanceCapture.shared.isRecording else { return }
+                            #endif
                             if isOn { startDisplayMonitor() } else { DisplayPerformanceMonitor.shared.stop() }
                         }
                     }
@@ -984,14 +1077,26 @@ private struct TestModeRow: View {
             on = TestCentre.active(mode.domain)
             // If the Display mode was already on when the screen appears, (re)start its frame monitor and
             // wire the sink, so a monitor that was torn down (e.g. the screen left and came back) resumes.
-            if mode.domain == .display, on { startDisplayMonitor() }
+            if mode.domain == .display, on {
+                #if os(iOS)
+                if !PerformanceCapture.shared.isRecording { startDisplayMonitor() }
+                #else
+                startDisplayMonitor()
+                #endif
+            }
         }
         .onDisappear {
             // Leaving the screen tears the frame monitor down so no display link survives a navigation
             // away. The mode flag stays on (the user's test is still active); the monitor resumes on
             // .onAppear above. This keeps the perpetual-display-link contract: a link exists only while the
             // Test Centre is on screen with the mode on.
-            if mode.domain == .display { DisplayPerformanceMonitor.shared.stop() }
+            if mode.domain == .display {
+                #if os(iOS)
+                if !PerformanceCapture.shared.isRecording { DisplayPerformanceMonitor.shared.stop() }
+                #else
+                DisplayPerformanceMonitor.shared.stop()
+                #endif
+            }
         }
     }
 
