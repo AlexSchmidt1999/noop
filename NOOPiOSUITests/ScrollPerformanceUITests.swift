@@ -32,6 +32,36 @@ final class ScrollPerformanceUITests: XCTestCase {
         scroll(app.scrollViews.firstMatch)
     }
 
+    func testChartScreensCapture() {
+        let app = activate()
+        openTestCentre(app, selectMore: true)
+        let record = app.buttons["Record 30 minutes"]
+        reveal(record, in: app.scrollViews.firstMatch)
+        XCTAssertTrue(record.isEnabled)
+        record.tap()
+        backToMore(app)
+
+        app.tabBars.buttons["Today"].tap()
+        scroll(app.scrollViews.firstMatch)
+        app.tabBars.buttons["Trends"].tap()
+        scroll(app.scrollViews.firstMatch)
+        app.tabBars.buttons["More"].tap()
+        let section = app.buttons["Insights"].firstMatch
+        reveal(section, in: app.scrollViews.firstMatch)
+        if (section.value as? String) == "Collapsed" { section.tap() }
+        let insights = app.buttons.matching(identifier: "Insights").element(boundBy: 1)
+        reveal(insights, in: app.scrollViews.firstMatch)
+        insights.tap()
+        scroll(app.scrollViews.firstMatch)
+        backToMore(app)
+
+        openTestCentre(app, selectMore: false)
+        let stop = app.buttons["Stop recording"]
+        reveal(stop, in: app.scrollViews.firstMatch)
+        stop.tap()
+        XCTAssertTrue(app.buttons["Review performance report"].waitForExistence(timeout: 5))
+    }
+
     func testSettingsScroll() {
         let app = activate()
         openTestCentre(app, selectMore: true)
