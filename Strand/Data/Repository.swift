@@ -927,6 +927,10 @@ final class Repository: ObservableObject {
         guard let store = await ensureStore() else { return }
         refreshGen &+= 1
         let myGen = refreshGen
+        #if os(iOS)
+        PerformanceCapture.shared.note("refresh_start generation=\(myGen)")
+        defer { PerformanceCapture.shared.note("refresh_end generation=\(myGen)") }
+        #endif
         let now = Date()
         let fromDay = Self.dayString(now.addingTimeInterval(-Double(nDays) * 86_400))
         let toDay = Self.dayString(now.addingTimeInterval(86_400))

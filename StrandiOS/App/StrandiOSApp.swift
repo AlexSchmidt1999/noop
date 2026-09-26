@@ -330,6 +330,7 @@ struct StrandiOSApp: App {
         // HealthKitBridge.sync guards on `auth == .authorized`, so the scenePhase trigger stays a
         // safe no-op until the user opts in.
         .onChange(of: scenePhase) { _, phase in
+            PerformanceCapture.shared.sceneChanged(active: phase == .active)
             if phase == .active {
                 model.drainPendingIntents(router: router)
                 // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
