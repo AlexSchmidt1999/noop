@@ -119,8 +119,6 @@ are very welcome.
 
 ## Build from source
 
-For reproducible iPhone scroll and menu checks, see [iPhone performance checks](IOS_PERFORMANCE.md).
-
 Prefer to build it yourself (which also grants HealthKit/widgets under your own Apple ID)? Run
 `xcodegen generate`, then build the **`NOOPiOS`** scheme in Xcode. The reconciliation that brought the
 [PR #42](../../../pull/42) port onto current `main` is summarised in **"Lessons from the fold-in"**
