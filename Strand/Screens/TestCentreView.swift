@@ -281,7 +281,9 @@ struct TestCentreView: View {
                         Button("Done") { showingPerformanceReview = false }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
+                        ShareLink(item: url) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
                     }
                 }
             }
