@@ -261,6 +261,9 @@ struct RootTabView: View {
         .onAppear {
             presentPendingHomeScreenQuickActionIfPossible()
         }
+        .onChange(of: selectedTab) { _, tab in
+            PerformanceCapture.shared.note("tab_open index=\(tab)")
+        }
         .onChange(of: homeScreenQuickActions.pendingAction) { _, _ in
             presentPendingHomeScreenQuickActionIfPossible()
         }
@@ -529,6 +532,8 @@ struct RootTabView: View {
                     .background(StrandPalette.surfaceBase.ignoresSafeArea())
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(.hidden, for: .navigationBar)
+                    .onAppear { PerformanceCapture.shared.note("menu_open name=\(route)") }
+                    .onDisappear { PerformanceCapture.shared.note("menu_close name=\(route)") }
             }
         }
         // Scroll the More index to the top on an at-root re-tap (#198 follow-up); read by its ScreenScaffold.

@@ -340,6 +340,10 @@ struct TrendsView: View {
         // count so a newly-banked/-scored night refreshes Rest reactively, like the other metrics that
         // read `repo.days` directly (and like the Android LaunchedEffect(days) twin).
         .task(id: repo.days.count) {
+            #if os(iOS)
+            PerformanceCapture.shared.note("trends_rest_load_start")
+            defer { PerformanceCapture.shared.note("trends_rest_load_end") }
+            #endif
             let s = await repo.exploreSeries(key: "sleep_performance", source: "my-whoop")
             sleepPerfByDay = Dictionary(s.map { ($0.day, $0.value) }, uniquingKeysWith: { _, last in last })
             sleepPerfRevision += 1

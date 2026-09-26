@@ -12,10 +12,9 @@ import CoreVideo
 // Performance test mode (Test Centre).
 //
 // CRITICAL CONTRACT: this monitor is a PERFORMANCE tool that must not itself cost performance. It runs
-// ONLY while the Display mode is active. start() is called when the mode toggles on (and on appear if it
-// was already on); stop() is called when it toggles off. There is NO perpetual display link: when the
-// mode is off, no CADisplayLink / CVDisplayLink exists, no frame callback fires, and zero `.display`
-// lines are emitted. A test pins exactly that (DisplayPerformanceMonitorTests).
+// ONLY while the Display mode is active on Test Centre or during an explicit, bounded iPhone
+// performance capture. There is NO perpetual display link: outside those opt-in sessions no
+// CADisplayLink / CVDisplayLink exists and no frame callback fires.
 //
 // The frame callback samples each frame's duration, counts hitches over a threshold, and emits a ROLLING
 // SUMMARY line once per window of frames (not per frame), so the trace is bounded. Every emitted line
