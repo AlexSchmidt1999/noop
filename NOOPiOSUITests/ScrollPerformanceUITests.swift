@@ -167,6 +167,11 @@ final class ScrollPerformanceUITests: XCTestCase {
 
     private func openTestCentre(_ app: XCUIApplication, selectMore: Bool) {
         if selectMore { app.tabBars.buttons["More"].tap() }
+        // Activating an existing app keeps its current navigation stack between test runs.
+        if app.buttons["Record 30 minutes"].exists || app.buttons["Stop recording"].exists { return }
+        for _ in 0..<4 where app.buttons["BackButton"].exists {
+            app.buttons["BackButton"].tap()
+        }
         let moreScroll = app.scrollViews.firstMatch
         let section = app.buttons["App"]
         reveal(section, in: moreScroll)
