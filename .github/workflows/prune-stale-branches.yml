@@ -49,6 +49,8 @@ concurrency:
 
 jobs:
   prune:
+    # This upstream maintenance job has contents: write and deletes refs; keep it off the security fork.
+    if: github.repository == 'ryanbr/noop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -77,11 +79,11 @@ jobs:
           ORPHANS: ${{ (github.event_name == 'workflow_dispatch' && inputs.prune_orphans) && '--prune-orphans' || '' }}
           ORPHAN_DAYS: ${{ inputs.orphan_days || '90' }}
         run: |
-          python3 Tools/prune-stale-branches.py \
-            --repo "${{ github.repository }}" \
-            --manifest deleted-branches.txt \
-            --orphan-days "$ORPHAN_DAYS" \
-            $ORPHANS $EXECUTE | tee summary.txt
+          set -euo pipefail
+          args=(--repo "$GITHUB_REPOSITORY" --manifest deleted-branches.txt --orphan-days "$ORPHAN_DAYS")
+          if [[ -n "$ORPHANS" ]]; then args+=("$ORPHANS"); fi
+          if [[ -n "$EXECUTE" ]]; then args+=("$EXECUTE"); fi
+          python3 Tools/prune-stale-branches.py "${args[@]}" | tee summary.txt
           {
             echo '### Prune stale branches'
             echo '```'

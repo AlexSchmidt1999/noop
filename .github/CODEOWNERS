@@ -1,0 +1,8 @@
+# Enable "Require review from Code Owners" in the fork's main branch ruleset.
+/.github/workflows/ @AlexSchmidt1999
+/.github/dependabot.yml @AlexSchmidt1999
+/.github/CODEOWNERS @AlexSchmidt1999
+/scripts/security/ @AlexSchmidt1999
+/.gitleaksignore @AlexSchmidt1999
+/project.yml @AlexSchmidt1999
+/Config/ @AlexSchmidt1999
