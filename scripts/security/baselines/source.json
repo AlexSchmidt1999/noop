@@ -602,7 +602,7 @@
     ".github/workflows/swift-packages.yml": "b2c9ec8546d23b96b386657c617c29ba8b4879e124b180ef6c44ff4fa2630848",
     ".github/workflows/tools-python-windows.yml": "2cfb9eebaec4bf3a6da7cf0dda43c14cc3c9b448dc0d1469c1f4277ddcf85adf",
     ".github/workflows/tools-python.yml": "ea96922f1167f83ec6877c57d88deb5eb1d562478a0d4752604d3b9651dcb1c7",
-    ".gitleaksignore": "ecfd726f629462bf2b6c39867816d8f51ad149751f8aaf8ec4b59205674cab7e",
+    ".gitleaksignore": "67edf45a1ddaee99785d8aa95563f4e5a68bbe42317361b4f28e139b1be48a95",
     "Config/BundleId.xcconfig": "30391404a2f938b655fea13c86089affb5ce4949c27d014b9a887d5fb5a47fe4",
     "Config/BundleIdSecrets.example.xcconfig": "8f168e1a8a3f4cc85b981c0aa752ae878cf0aae3538721f9cbee0f9b7b487202",
     "Strand/Oura/OuraConfig.xcconfig": "f4063ca8dcd5836ad3cdf7275abff87318a4488cb72987abd12443ff0e144b3b",

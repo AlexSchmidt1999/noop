@@ -26,3 +26,6 @@ ed7e8a66de79f0be44fe4461fd64961a6f6aebf6:scripts/security/baselines/source.json:
 # Public-fork baseline refresh: SHA-256 digests of tracked xcconfig examples, not credentials.
 6b43ec8db44718d30b18d92e693cca850b094f68:scripts/security/baselines/source.json:generic-api-key:602
 6b43ec8db44718d30b18d92e693cca850b094f68:scripts/security/baselines/source.json:generic-api-key:604
+# Upstream-main baseline refresh: SHA-256 digests of public xcconfig examples, not credentials.
+1539daf86758a54c78ec25c8bd6c591e5852377a:scripts/security/baselines/source.json:generic-api-key:607
+1539daf86758a54c78ec25c8bd6c591e5852377a:scripts/security/baselines/source.json:generic-api-key:609
