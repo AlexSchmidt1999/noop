@@ -1006,12 +1006,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val localKey = java.time.LocalDate.now().toString()
                 _today.value = resolveTodayRow(days, logicalKey, localKey)
                 _healthAlert.value =
-                    if (_illnessWatchEnabled.value) IllnessWatch.evaluate(days) else null
+                    (if (_illnessWatchEnabled.value && _today.value != null &&
+                        days.lastOrNull()?.day == _today.value?.day
+                    ) {
+                        IllnessWatch.evaluate(days)
+                    } else null)
+                        ?.let { IllnessAlertNotifier.withWindow(appContext, it, days) }
                 // EVERY evaluation is reported, raised or clear. The clear-to-raised edge now lives in
                 // the notifier's PERSISTED state (#2586): `_healthAlert` starts null on every ViewModel
                 // build, so gating here made a cold start look like a transition, and the day gate then
-                // allowed a notification about an alert that had simply stayed raised.
-                IllnessAlertNotifier.onEvaluated(appContext, _healthAlert.value)
+                // allowed a notification about an alert that had simply stayed raised. That is why the
+                // `previousAlert == null` gate this change arrived with is NOT restored: it is the gate
+                // the persisted edge replaced, and reinstating it would bring the cold start back.
+                // A loading/error emission with fewer than 14 days cannot establish a real clear.
+                if (days.size >= 14) IllnessAlertNotifier.onEvaluated(appContext, _healthAlert.value)
                 // Morning recap (#517) — opt-in, default OFF. Once today's row carries a banked night
                 // (totalSleepMin != null), post a one-per-day Charge + Rest recap. recovery == Charge;
                 // Rest is recomputed from the night's totals via RestScorer (the same single source of
@@ -1786,12 +1794,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         buzz(2, HapticPrefs.WORKOUT)
         viewModelScope.launch {
-            runCatching { repository.upsertWorkouts(listOf(row)) }
+            val saved = runCatching { repository.upsertWorkouts(listOf(row)) }.isSuccess
             // #528: persist the live 1 Hz workout HR into hrSample so it can export to Health Connect
             // at full resolution NOW (the HR export keeps workout-window samples un-decimated), instead
             // of only after the next strap offload sync. IGNORE-on-conflict makes a later sync of the
             // same seconds a no-op.
             runCatching { if (samples.isNotEmpty()) repository.insertHr(samples) }
+            // The Workouts screen collects this list even while the live capture sheet is open. Refresh
+            // after the row and HR are persisted so its sessions, stats and first-workout empty state
+            // update without leaving and re-entering the screen.
+            if (saved) loadWorkouts()
             if (_hcWriteback.value) {
                 runCatching { HealthConnectWriter.writeExercise(appContext, row, w.sport.exerciseType) }
                 // #528: export the just-captured HR series now (workout row already upserted above, so
@@ -2829,13 +2841,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _illnessWatchEnabled.value = enabled
         NoopPrefs.setIllnessWatch(appContext, enabled)
         // Recompute now — the recentDays collector only fires on data changes.
-        _healthAlert.value = if (enabled) IllnessWatch.evaluate(recentDays.value) else null
+        val days = recentDays.value
+        _healthAlert.value = (if (enabled && _today.value != null &&
+            days.lastOrNull()?.day == _today.value?.day
+        ) {
+            IllnessWatch.evaluate(days)
+        } else null)
+            ?.let { IllnessAlertNotifier.withWindow(appContext, it, days) }
         // Reported like any other evaluation, because the persisted edge (#2586) is only correct if
         // EVERY change of state reaches it. Switching the watch off while an alert was raised used to
         // clear the banner here and leave the stored flag raised, so the next genuine transition —
         // possibly months later, after switching the watch back on — would be read as "already raised"
         // and silently suppressed.
-        IllnessAlertNotifier.onEvaluated(appContext, _healthAlert.value)
+        if (days.size >= 14) IllnessAlertNotifier.onEvaluated(appContext, _healthAlert.value)
     }
 
     /** #hide-cycle: hide/show the cycle-awareness offer. Hiding also stops active tracking, so "hidden"

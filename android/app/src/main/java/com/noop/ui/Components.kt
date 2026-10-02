@@ -28,6 +28,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -79,6 +81,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -645,6 +648,7 @@ fun <T> SegmentedPillControl(
     // control can teach that an option exists before it is usable, e.g. trend ranges that unlock as
     // history builds. Defaulted so every existing call site is untouched.
     enabled: (T) -> Boolean = { true },
+    accessibilityLabel: String? = null,
 ) {
     val outerShape = RoundedCornerShape(50)
     val scrollsForLargeText = adaptsToAvailableWidth && LocalDensity.current.fontScale > 1f
@@ -656,6 +660,8 @@ fun <T> SegmentedPillControl(
     // SegmentedPillControl refresh (segment height 36, pill fills it for an even inset).
     Row(
         modifier = modifier
+            .selectableGroup()
+            .then(if (accessibilityLabel != null) Modifier.semantics { contentDescription = accessibilityLabel } else Modifier)
             .then(if (scrollsForLargeText) Modifier.horizontalScroll(rangeScrollState) else Modifier)
             .then(if (usesEqualWidth) Modifier.fillMaxWidth() else Modifier)
             .height(36.dp)
@@ -686,7 +692,14 @@ fun <T> SegmentedPillControl(
                     .fillMaxHeight()
                     .clip(pillShape)
                     .then(pillBg)
-                    .then(if (itemEnabled) Modifier.clickableNoRipple { onSelect(item) } else Modifier)
+                    .selectable(
+                        selected = selected,
+                        enabled = itemEnabled,
+                        role = Role.Tab,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onSelect(item) },
+                    )
                     .padding(horizontal = if (usesEqualWidth) Metrics.space4 else 12.dp),
                 contentAlignment = Alignment.Center,
             ) {

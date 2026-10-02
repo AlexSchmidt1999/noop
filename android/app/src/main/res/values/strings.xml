@@ -1996,6 +1996,7 @@
     <!-- The remaining notifier titles/bodies, surfaced by extending i18n_audit.py to the
          notification builders. Same defect as the block above: user-visible, never localised. -->
     <string name="illness_alert_title">Early warning: take it easy</string>
+    <string name="illness_alert_window">Nights: %1$s, %2$s</string>
     <string name="inactivity_title">Move reminder</string>
     <string name="smart_alarm_title">Good morning</string>
     <string name="smart_alarm_body">Your smart alarm just went off.</string>
