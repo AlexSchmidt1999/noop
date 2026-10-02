@@ -357,14 +357,6 @@ final class HealthKitBridge: ObservableObject {
         }
     }
 
-    /// Foreground catch-up. Call on app-active so anything background delivery missed (the system can
-    /// throttle or skip wakes) is backfilled. A short window is enough because live delivery keeps the
-    /// recent days current; 7 covers a weekend of missed wakes. Exposed for the existing scenePhase
-    /// hook in `StrandiOSApp` to call — no other file is edited.
-    func foregroundCatchUp() async {
-        await sync(days: 7)
-    }
-
     /// Drive an incremental sync off an observer wake. We use an `HKAnchoredObjectQuery` per type to
     /// learn the span of days touched since we last looked (persisting the anchor so the same samples
     /// aren't walked twice and nothing between wakes is missed), then re-aggregate just that day window
@@ -430,9 +422,20 @@ final class HealthKitBridge: ObservableObject {
             return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
         }()
 
+        // Observer ingestion already caps its re-aggregation window at 31 days. Match that bound
+        // here so a fresh anchor does not decode years of Watch samples that cannot be ingested by
+        // this path. Explicit historical imports keep their existing query windows, and anchors
+        // still advance only after the corresponding aggregate sync commits.
+        let cal = Calendar.current
+        guard let oldestRelevant = cal.date(byAdding: .day, value: -31,
+                                            to: cal.startOfDay(for: Date())) else { return (nil, nil) }
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForSamples(withStart: oldestRelevant, end: nil, options: []),
+            Self.notNoopAuthored,
+        ])
         return await withCheckedContinuation { (cont: CheckedContinuation<(Date?, HKQueryAnchor?), Never>) in
             let q = HKAnchoredObjectQuery(
-                type: type, predicate: Self.notNoopAuthored,
+                type: type, predicate: predicate,
                 anchor: priorAnchor, limit: HKObjectQueryNoLimit
             ) { _, samples, _, newAnchor, _ in
                 // Return the advanced anchor but do NOT persist it here: the caller commits it only after

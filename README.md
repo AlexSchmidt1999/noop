@@ -4,6 +4,9 @@
 
 <h1 align="center">NOOP</h1>
 
+This fork includes [documented iPhone UI optimizations](docs/FORK_UI_OPTIMIZATIONS.md)
+and a [reviewed build and signing pipeline](docs/SECURITY_PIPELINE.md).
+
 <p align="center"><b>Your strap. Your data. Your machine. Offline, on-device, no cloud.</b></p>
 
 <p align="center"><sub>Now in the all-new <b>Liquid Metal</b> design: one living look across iPhone, Android and Mac.</sub></p>

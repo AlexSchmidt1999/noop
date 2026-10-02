@@ -283,10 +283,10 @@
         "Tools/refresh-stats-badges.py:14",
         "Tools/refresh-stats-badges.py:29",
         "Tools/refresh-stats-badges.py:7",
-        "Tools/tests/test_parity_governance_acceptance.py:1082",
-        "Tools/tests/test_parity_governance_acceptance.py:1122",
-        "Tools/tests/test_parity_governance_acceptance.py:1135",
-        "Tools/tests/test_parity_governance_acceptance.py:1148"
+        "Tools/tests/test_parity_governance_acceptance.py:1085",
+        "Tools/tests/test_parity_governance_acceptance.py:1125",
+        "Tools/tests/test_parity_governance_acceptance.py:1138",
+        "Tools/tests/test_parity_governance_acceptance.py:1151"
       ],
       "args.repo": [
         "Tools/prune-stale-branches.py:183",
@@ -316,10 +316,10 @@
         ".github/workflows/fork-release.yml:346",
         "Tools/parity_ratchet.py:294",
         "Tools/release.sh:154",
-        "Tools/tests/test_parity_governance_acceptance.py:1083",
-        "Tools/tests/test_parity_governance_acceptance.py:1123",
-        "Tools/tests/test_parity_governance_acceptance.py:1133",
-        "Tools/tests/test_parity_governance_acceptance.py:1149",
+        "Tools/tests/test_parity_governance_acceptance.py:1086",
+        "Tools/tests/test_parity_governance_acceptance.py:1126",
+        "Tools/tests/test_parity_governance_acceptance.py:1136",
+        "Tools/tests/test_parity_governance_acceptance.py:1152",
         "Tools/update-altstore-source.sh:41",
         "Tools/update-homebrew-cask.sh:32",
         "Tools/update-homebrew-cask.sh:47",
@@ -469,7 +469,7 @@
         "Strand/System/AppChangelog.swift:1791"
       ],
       "localhost": [
-        "Strand/AI/AICoach.swift:227",
+        "Strand/AI/AICoach.swift:223",
         "Strand/AI/AIProvider.swift:112",
         "Strand/AI/AIProvider.swift:160",
         "Strand/AI/Providers/Custom.swift:5",
@@ -510,7 +510,7 @@
         "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/SleepStagerTests.swift:920"
       ],
       "sleep.dismissedsessions": [
-        "Strand/Data/Repository.swift:1683"
+        "Strand/Data/Repository.swift:1681"
       ],
       "sportscourt.fill": [
         "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:409"
@@ -520,7 +520,7 @@
         "Strand/Screens/RawDataCollectorView.swift:107"
       ],
       "sync.pendingmanualrequestedat": [
-        "Strand/BLE/BLEManager.swift:4948"
+        "Strand/BLE/BLEManager.swift:4943"
       ],
       "today.hostedcards": [
         "Packages/WhoopStore/Sources/WhoopStore/BackupSettings.swift:62",
@@ -531,7 +531,7 @@
         "Strand/Screens/HostedCards.swift:168"
       ],
       "today.sectionorder": [
-        "Strand/Liquid/LiquidTodayView.swift:351"
+        "Strand/Liquid/LiquidTodayView.swift:368"
       ],
       "whoop.sqlite": [
         "Packages/NoopLocalAccess/Tests/NoopLocalAccessCoreTests/TemporaryDatabase.swift:9",
@@ -596,12 +596,12 @@
     ".github/workflows/i18n-coverage.yml": "99096a08d723c3882559a5b6ee3ea2cfd7a990b9a01f847b234589d58eda44dd",
     ".github/workflows/noop-security.yml": "f98fea3108f51b48af7293fd0c447e2921197c26892e5006317fb5fd5f61a24d",
     ".github/workflows/noop-upstream-release.yml": "7567b1c7acfa341184564cac27871224c79e9e139f30c3eadcfaa163e9299fae",
-    ".github/workflows/parity-governance.yml": "6eed6aeb806690309bd04cb4bc21717eb498474721590bd68cec16ff024914f4",
+    ".github/workflows/parity-governance.yml": "43eba17282a2efb7976516115ba76cb278bcf8ec0b15ca96fbf37d8051d66393",
     ".github/workflows/prune-stale-branches.yml": "598bd662a0172730c17e33898ced4dce6ef5d38f4eadff6d147bb6363d36cfc2",
     ".github/workflows/source-hygiene.yml": "4ff9e3f0d2e95e90c82994edcee194dd4fa0bfa4c876449374861f4ff16782e9",
     ".github/workflows/swift-packages.yml": "b2c9ec8546d23b96b386657c617c29ba8b4879e124b180ef6c44ff4fa2630848",
     ".github/workflows/tools-python-windows.yml": "2cfb9eebaec4bf3a6da7cf0dda43c14cc3c9b448dc0d1469c1f4277ddcf85adf",
-    ".github/workflows/tools-python.yml": "ea96922f1167f83ec6877c57d88deb5eb1d562478a0d4752604d3b9651dcb1c7",
+    ".github/workflows/tools-python.yml": "fe02bd23892270663f9cd1b0a966f4a69519d4687f86e43144db3b97db0b0dff",
     ".gitleaksignore": "67edf45a1ddaee99785d8aa95563f4e5a68bbe42317361b4f28e139b1be48a95",
     "Config/BundleId.xcconfig": "30391404a2f938b655fea13c86089affb5ce4949c27d014b9a887d5fb5a47fe4",
     "Config/BundleIdSecrets.example.xcconfig": "8f168e1a8a3f4cc85b981c0aa752ae878cf0aae3538721f9cbee0f9b7b487202",
@@ -667,7 +667,7 @@
     "Tools/tests/test_parity_arity.py": "1859ca53741a95bf714deedd77876e3bf5372110f2b14fe8aa99e690e86e5986",
     "Tools/tests/test_parity_artefact_filter.py": "a0e0fc7ced1135be0cebce38e6009881a0f50aae8d2481a26675bf18808c81b7",
     "Tools/tests/test_parity_disposition_kinds.py": "0cca82a0ca89840c4e5d4c4a70e922773171e7e119ad095fb407ac15af06c53c",
-    "Tools/tests/test_parity_governance_acceptance.py": "13d2aafbadac71041ba74a547d8abd4563efb98df1bdfc4d332d43677d4ae0c7",
+    "Tools/tests/test_parity_governance_acceptance.py": "b4cc5f4dca2c9886175e3f4354d9c23450b2edc16ac6dc357f2e21849f62856d",
     "Tools/tests/test_parity_harness.py": "8e5d6a3d3343f0ddb215ac57caadafc48c3134347a22c47721dcd7c26b6b7298",
     "Tools/tests/test_parity_ledger.py": "e91c186e4c54f971f36697b66aa03bd6362ecd46a55cd6fbcedca8efeb57e858",
     "Tools/tests/test_rr_legacy_preservation_contract.py": "9a0d16d199c694c3cb50b5bfe6755cb0f5f34b09198be4f1f8a60ddfb0f83d20",
@@ -678,7 +678,7 @@
     "android/gradlew": "fc977a94723af68aaffa4e5d60496fb4aeed1884b6b19e5e2f2fd7612673313d",
     "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
-    "project.yml": "17a8b732fcc9580d976bfcd5536dd4779f1dedcf437361bba8b6e1957b9b9826",
+    "project.yml": "94491ae37dfb32ee46eaf45c8248565e07b43a2ce398ef69aaf601aae64d3a4e",
     "scripts/security/auto_update.py": "514a480ad272c1159bca0bd2dee76fb15cc9ae57f6426169c9b0348afca48478",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
