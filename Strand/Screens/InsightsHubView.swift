@@ -40,12 +40,14 @@ struct InsightsHubView: View {
     var body: some View {
         ScreenScaffold(title: "Insights",
                        subtitle: "Patterns in your own data: association, not cause.",
-                       // The inner lazy column below builds each section as it enters the viewport.
+                       // PERF (scroll): lazy column — byte-identical layout (LazyVStack == eager VStack
+                       // alignment/spacing/header). The content is one inner eager VStack, so the staggered
+                       // mover reveal is unchanged; this only defers building that stack until it scrolls in.
                        lazy: true) {
             if !model.loaded {
                 ComingSoon(what: "Reading your journal and outcomes…")
             } else {
-                LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
+                VStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
                     moversSection
                     doseSection
                     methodNote
