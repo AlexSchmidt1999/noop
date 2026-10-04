@@ -377,7 +377,7 @@
     },
     "runtime": {
       "192.168.x.x": [
-        "Strand/System/AppChangelog.swift:1557"
+        "Strand/System/AppChangelog.swift:1576"
       ],
       "8281032873.db": [
         "Packages/StrandImport/Tests/StrandImportTests/XiaomiBandImporterTests.swift:15"
@@ -407,7 +407,7 @@
         "Strand/Oura/OuraOAuth.swift:12"
       ],
       "applehealth.hourlysteps.backfilled": [
-        "StrandiOS/Health/HealthKitBridge.swift:168"
+        "StrandiOS/Health/HealthKitBridge.swift:169"
       ],
       "arrow.down.right.and.arrow.up.left": [
         "Strand/Screens/FullDayChartView.swift:327"
@@ -453,7 +453,7 @@
         "Packages/StrandImport/Package.swift:14",
         "Packages/StrandImport/Package.swift:15",
         "Packages/WhoopStore/Package.swift:14",
-        "Strand/Screens/SettingsView.swift:2567"
+        "Strand/Screens/SettingsView.swift:2579"
       ],
       "grdb.swift.git": [
         "Packages/NoopLocalAccess/Package.swift:15",
@@ -466,7 +466,7 @@
       "llama.cpp": [
         "Strand/Screens/CoachView.swift:244",
         "Strand/Screens/CoachView.swift:887",
-        "Strand/System/AppChangelog.swift:1791"
+        "Strand/System/AppChangelog.swift:1810"
       ],
       "localhost": [
         "Strand/AI/AICoach.swift:223",
@@ -474,7 +474,7 @@
         "Strand/AI/AIProvider.swift:160",
         "Strand/AI/Providers/Custom.swift:5",
         "Strand/Screens/CoachView.swift:233",
-        "Strand/System/AppChangelog.swift:1791"
+        "Strand/System/AppChangelog.swift:1810"
       ],
       "noop-export.zip": [
         "Packages/StrandImport/Tests/StrandImportTests/WhoopCsvExporterTests.swift:145"
@@ -495,7 +495,7 @@
         "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/HrOnlyPhysiologyIsolationTests.swift:67"
       ],
       "raw.githubusercontent.com": [
-        "Strand/System/AppChangelog.swift:1624"
+        "Strand/System/AppChangelog.swift:1643"
       ],
       "record.circle": [
         "Strand/Screens/RawDataCollectorView.swift:110"
@@ -510,7 +510,7 @@
         "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/SleepStagerTests.swift:920"
       ],
       "sleep.dismissedsessions": [
-        "Strand/Data/Repository.swift:1681"
+        "Strand/Data/Repository.swift:1702"
       ],
       "sportscourt.fill": [
         "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:409"
@@ -678,7 +678,7 @@
     "android/gradlew": "fc977a94723af68aaffa4e5d60496fb4aeed1884b6b19e5e2f2fd7612673313d",
     "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
-    "project.yml": "94491ae37dfb32ee46eaf45c8248565e07b43a2ce398ef69aaf601aae64d3a4e",
+    "project.yml": "b8163bb4fd213e5566ea423050f9e37d4767b49f5763bced51d904e1ec4131db",
     "scripts/security/auto_update.py": "514a480ad272c1159bca0bd2dee76fb15cc9ae57f6426169c9b0348afca48478",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
