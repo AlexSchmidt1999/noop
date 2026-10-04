@@ -4,8 +4,8 @@
 
 <h1 align="center">NOOP</h1>
 
-This fork includes [documented iPhone UI optimizations](docs/FORK_UI_OPTIMIZATIONS.md)
-and a [reviewed build and signing pipeline](docs/SECURITY_PIPELINE.md).
+This fork follows upstream NOOP 12.0.0 with a [reviewed build and signing pipeline](docs/SECURITY_PIPELINE.md).
+Nine [iPhone UI contributions](docs/FORK_UI_OPTIMIZATIONS.md) are now included upstream.
 
 <p align="center"><b>Your strap. Your data. Your machine. Offline, on-device, no cloud.</b></p>
 

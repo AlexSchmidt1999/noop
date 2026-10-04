@@ -1,12 +1,12 @@
-# iPhone UI optimizations in this fork
+# iPhone UI contributions included in NOOP 12
 
-These changes reduce repeated SwiftUI and chart work on top of upstream NOOP.
-They are confined to the Apple UI and the iOS HealthKit observer; analytics formulas,
-stored readings, and the Android implementation are unchanged by the fork patches.
+Nine contributions from this fork are included in upstream NOOP 12.0.0.
+The fork now uses the release app source without additional UI patches. The separate
+lazy-dashboard proposal, PR #2638, is still open and is excluded from this build.
+The fork retains its reviewed security and local signing pipeline.
 
 | Location | Problem and correction |
 |---|---|
-| `LiquidTodayView`, `TodayView`, `TrendsView`, `InsightsView`, `InsightsHubView` | An eager inner stack makes an outer lazy scaffold construct an entire screen as one child. Inner lazy stacks defer individual sections until they approach the viewport, retaining section order and spacing. Liquid Today's pull-offset probe stays eager. |
 | `LiquidTodayView.handlePull` | Ordinary upward scrolling repeatedly reports a negative offset that clamps to zero. Assigning that unchanged state invalidates the dashboard. Write only when the clamped offset changes; refresh arming and release handling still run. |
 | `LiquidLiveHR` | Historical fallback buckets need no decorative animation clock. Run the trace animation only for live HR; retain the same historical points and gap segments. |
 | `NoopPanelSurface` | Layered translucent gradients and blurred shadows repeat across every scrolling card. iOS uses a solid theme-aware fill and thin tinted border; other platforms retain their previous surfaces. Card geometry and design tokens remain the same. |
