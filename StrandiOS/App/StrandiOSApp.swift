@@ -117,6 +117,7 @@ struct StrandiOSApp: App {
             model?.live.append(log: AppModel.stamped(line))
         })
         _liftActivity = State(initialValue: liftActivity)
+        // Restore before the coordinator's first push or any scene exists.
         liftSession.resumeSaved()
         let training = TrainingCoordinator(model: model, lift: liftSession, liftActivity: liftActivity)
         _training = StateObject(wrappedValue: training)
@@ -132,9 +133,6 @@ struct StrandiOSApp: App {
         SyncLiveActivityController.shared.holdsBackNewBanner = { [weak liftSession] in
             liftSession?.isActive == true && UnitPrefs.liftLiveActivityEnabled()
         }
-        // Before any view or publisher exists: the first push to the Lock Screen banner must find the
-        // session already running, or it ends the banner iOS kept alive across the restart.
-        liftSession.resumeSaved()
         // #1538: a strap offload completes while the app is BACKGROUNDED — it stays alive as a
         // bluetooth-central to receive it — and the re-score it triggers took nearly eight minutes on the
         // reporter's install, far longer than that wake survives. The pass is all-or-nothing, so being
