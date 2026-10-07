@@ -3201,9 +3201,9 @@ object SleepStager {
                 val mean = sum.toDouble() / count.toDouble()
                 if (count < minBinSamples) thin += 1
                 if (mean < minPlausibleBpm) implausible += 1
-                if (ungated == null || mean < ungated!!) { ungated = mean; ungatedN = count }
+                if (ungated == null || mean < ungated) { ungated = mean; ungatedN = count }
                 if (count >= minBinSamples && mean >= minPlausibleBpm &&
-                    (gated == null || mean < gated!!)
+                    (gated == null || mean < gated)
                 ) gated = mean
             }
         }
@@ -3237,9 +3237,9 @@ object SleepStager {
         var ungated: Double? = null
         for ((sum, count) in restingHRBins(start, end, hr)) {
             val mean = sum.toDouble() / count.toDouble()
-            if (ungated == null || mean < ungated!!) ungated = mean
+            if (ungated == null || mean < ungated) ungated = mean
             if (count >= rhrMinBinSamples && mean >= rhrMinPlausibleBpm &&
-                (gated == null || mean < gated!!)
+                (gated == null || mean < gated)
             ) gated = mean
         }
         return (gated ?: ungated)?.roundToInt()
