@@ -8,13 +8,13 @@ import SwiftUI
 @main
 struct NOOPWidgetBundle: WidgetBundle {
     var body: some Widget {
+        TrainingWidget()
         NOOPWidget()
         NOOPLiveActivity()
         CoachBriefWidget()
         HeartRateWidget()
         StressWidget()
         LiftLiveActivity()
-        TrainingWidget()
         WorkoutLiveActivity()
         SyncLiveActivity()
     }
