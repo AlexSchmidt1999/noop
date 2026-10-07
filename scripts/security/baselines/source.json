@@ -275,7 +275,7 @@
         ".github/workflows/noop-security.yml:382"
       ],
       "192.168.x.x": [
-        "project.yml:314"
+        "project.yml:315"
       ],
       "api.github.com": [
         "Tools/parity_ratchet.py:292",
@@ -372,7 +372,7 @@
         "Tools/test_i18n_audit.py:35"
       ],
       "staging.app": [
-        "project.yml:197"
+        "project.yml:198"
       ]
     },
     "runtime": {
@@ -383,23 +383,23 @@
         "Packages/StrandImport/Tests/StrandImportTests/XiaomiBandImporterTests.swift:15"
       ],
       "`": [
-        "Strand/AI/AIProvider.swift:164",
-        "Strand/AI/AIProvider.swift:165",
-        "Strand/AI/AIProvider.swift:189"
+        "Strand/AI/AIProvider.swift:157",
+        "Strand/AI/AIProvider.swift:158",
+        "Strand/AI/AIProvider.swift:182"
       ],
       "ai.custombaseurl": [
-        "Strand/AI/AIProvider.swift:113"
+        "Strand/AI/AIProvider.swift:106"
       ],
       "api.anthropic.com": [
-        "Strand/AI/AIProvider.swift:85",
-        "Strand/AI/AIProvider.swift:94"
+        "Strand/AI/AIProvider.swift:78",
+        "Strand/AI/AIProvider.swift:87"
       ],
       "api.github.com": [
         "Strand/System/UpdateChecker.swift:31"
       ],
       "api.openai.com": [
-        "Strand/AI/AIProvider.swift:84",
-        "Strand/AI/AIProvider.swift:93"
+        "Strand/AI/AIProvider.swift:77",
+        "Strand/AI/AIProvider.swift:86"
       ],
       "api.ouraring.com": [
         "Strand/Oura/OuraAPIClient.swift:11",
@@ -445,15 +445,15 @@
         "Strand/Screens/TodayCustomizationMetadata.swift:8"
       ],
       "generativelanguage.googleapis.com": [
-        "Strand/AI/AIProvider.swift:86",
-        "Strand/AI/AIProvider.swift:95"
+        "Strand/AI/AIProvider.swift:79",
+        "Strand/AI/AIProvider.swift:88"
       ],
       "github.com": [
         "Packages/NoopLocalAccess/Package.swift:15",
         "Packages/StrandImport/Package.swift:14",
         "Packages/StrandImport/Package.swift:15",
         "Packages/WhoopStore/Package.swift:14",
-        "Strand/Screens/SettingsView.swift:2579"
+        "Strand/Screens/SettingsView.swift:2584"
       ],
       "grdb.swift.git": [
         "Packages/NoopLocalAccess/Package.swift:15",
@@ -470,8 +470,8 @@
       ],
       "localhost": [
         "Strand/AI/AICoach.swift:223",
-        "Strand/AI/AIProvider.swift:112",
-        "Strand/AI/AIProvider.swift:160",
+        "Strand/AI/AIProvider.swift:105",
+        "Strand/AI/AIProvider.swift:153",
         "Strand/AI/Providers/Custom.swift:5",
         "Strand/Screens/CoachView.swift:233",
         "Strand/System/AppChangelog.swift:1810"
@@ -480,7 +480,7 @@
         "Packages/StrandImport/Tests/StrandImportTests/WhoopCsvExporterTests.swift:145"
       ],
       "noop.activeliftsession": [
-        "Strand/Data/LiftSessionPersistence.swift:96"
+        "Strand/Data/LiftSessionPersistence.swift:102"
       ],
       "noop.livesessionsbeta": [
         "Strand/App/LiveSessionRunner.swift:29"
@@ -510,7 +510,7 @@
         "Packages/StrandAnalytics/Tests/StrandAnalyticsTests/SleepStagerTests.swift:920"
       ],
       "sleep.dismissedsessions": [
-        "Strand/Data/Repository.swift:1702"
+        "Strand/Data/Repository.swift:1705"
       ],
       "sportscourt.fill": [
         "Packages/StrandDesign/Sources/StrandDesign/SportIcon.swift:409"
@@ -531,7 +531,7 @@
         "Strand/Screens/HostedCards.swift:168"
       ],
       "today.sectionorder": [
-        "Strand/Liquid/LiquidTodayView.swift:368"
+        "Strand/Liquid/LiquidTodayView.swift:362"
       ],
       "whoop.sqlite": [
         "Packages/NoopLocalAccess/Tests/NoopLocalAccessCoreTests/TemporaryDatabase.swift:9",
@@ -561,8 +561,8 @@
         "Packages/StrandImport/Package.swift:14"
       ],
       "\u2026": [
-        "Strand/AI/AIProvider.swift:122",
-        "Strand/AI/AIProvider.swift:175"
+        "Strand/AI/AIProvider.swift:115",
+        "Strand/AI/AIProvider.swift:168"
       ]
     }
   },
@@ -678,7 +678,7 @@
     "android/gradlew": "fc977a94723af68aaffa4e5d60496fb4aeed1884b6b19e5e2f2fd7612673313d",
     "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
-    "project.yml": "b8163bb4fd213e5566ea423050f9e37d4767b49f5763bced51d904e1ec4131db",
+    "project.yml": "b9ed8ba8904af1f9b5ccf774d3607e67b42492c8be6b8364f7c77bad80e6afe0",
     "scripts/security/auto_update.py": "514a480ad272c1159bca0bd2dee76fb15cc9ae57f6426169c9b0348afca48478",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
