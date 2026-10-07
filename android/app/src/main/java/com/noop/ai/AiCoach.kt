@@ -141,7 +141,7 @@ class AiCoach(
 
         // Resolve the system prompt fresh (user override or the built-in default) so an edit in the
         // Coach settings takes effect on this very send.
-        val systemPrompt = resolveSystemPrompt(ctx)
+        val systemPrompt = requestSystemPrompt(ctx)
 
         // Slide a window over a long conversation so the history can't crowd out the reply on a
         // small local context window (e.g. Ollama's 2048-token default). The first user turn carries
@@ -221,7 +221,7 @@ class AiCoach(
             injectContext(history, NO_CONSENT_NOTE)
         }
 
-        val systemPrompt = resolveSystemPrompt(ctx)
+        val systemPrompt = requestSystemPrompt(ctx)
         val grounded = trimmedHistory(groundedFull, MAX_HISTORY_TURNS)
         val groundedWithSummary = injectDroppedSummary(grounded, groundedFull)
 
@@ -260,7 +260,7 @@ class AiCoach(
      * Best-effort: GETs the provider's models endpoint and returns the ids it advertises.
      * On any failure (no key, network, bad key, malformed body) this returns an EMPTY list
      * rather than throwing, the caller simply keeps its curated/static list. The result is
-     * filtered to the ids that make sense for chat (OpenAI: ids starting with "gpt" or "o";
+     * filtered to the ids that make sense for this client's text-chat endpoints (OpenAI text families;
      * Anthropic: all returned ids) and de-duplicated.
      *
      * Runs on [Dispatchers.IO].
@@ -300,14 +300,30 @@ class AiCoach(
         }
 
         runCatching {
-            val (code, text) = execute(builder.build())
-            if (code !in 200..299) return@runCatching emptyList<String>()
-
-            // Gemini is shaped differently ({"models":[{"name":"models/…"}]}), so it has its own pure
-            // parse; every other provider is OpenAI-shaped ({"data":[{"id":"…"}]}).
-            if (provider == AiProvider.GEMINI) return@runCatching parseGeminiModels(text)
-
-            parseOpenAiCompatibleModels(provider, text)
+            val firstRequest = builder.build()
+            val ids = LinkedHashSet<String>()
+            val seenCursors = HashSet<String>()
+            var cursor: String? = null
+            do {
+                val request = if (cursor == null) firstRequest else {
+                    val parameter = if (provider == AiProvider.GEMINI) "pageToken" else "after_id"
+                    firstRequest.newBuilder().url(
+                        firstRequest.url.newBuilder().addQueryParameter(parameter, cursor).build(),
+                    ).build()
+                }
+                val (code, text) = execute(request)
+                if (code !in 200..299) return@runCatching emptyList<String>()
+                ids.addAll(if (provider == AiProvider.GEMINI) parseGeminiModels(text)
+                    else parseOpenAiCompatibleModels(provider, text))
+                val json = parse(text)
+                cursor = when (provider) {
+                    AiProvider.GEMINI -> json.optString("nextPageToken").takeIf { it.isNotEmpty() }
+                    AiProvider.ANTHROPIC -> if (json.optBoolean("has_more"))
+                        json.optString("last_id").takeIf { it.isNotEmpty() } else null
+                    else -> null
+                }
+            } while (cursor != null && seenCursors.add(cursor))
+            ids.toList()
         }.getOrDefault(emptyList())
     }
 
@@ -679,6 +695,7 @@ class AiCoach(
         history: List<ChatMsg>,
         systemPrompt: String,
         customAuthHeader: CustomAiAuthHeader = CustomAiAuthHeader.BEARER,
+        modernParams: Boolean = false,
     ): String {
         val messages = JSONArray()
         messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
@@ -694,11 +711,11 @@ class AiCoach(
             messages = messages,
             key = key,
             customAuthHeader = customAuthHeader,
-            modernParams = false,
+            modernParams = modernParams,
         )
         val responseText = if (code in 200..299) {
             text
-        } else if (code == 400 && shouldRetryOpenAiModernParams(text)) {
+        } else if (provider == AiProvider.CUSTOM && !modernParams && code == 400 && shouldRetryOpenAiModernParams(text)) {
             val (retryCode, retryText) = executeOpenAiCompatible(
                 provider = provider,
                 url = url,
@@ -741,21 +758,7 @@ class AiCoach(
         customAuthHeader: CustomAiAuthHeader,
         modernParams: Boolean,
     ): Pair<Int, String> {
-        val body = JSONObject()
-            .put("model", model)
-            .put("messages", messages)
-        if (modernParams) {
-            // #1074: same 4096 cap as the standard path below. This modern-params leg fronts REASONING
-            // models, which count hidden thinking tokens against max_completion_tokens — so 900 starved
-            // them into truncated/empty replies even more readily. A cap, not a target.
-            body.put("max_completion_tokens", 4096)
-        } else {
-            body.put("temperature", 0.6)
-            // #1074: 900 truncated detailed coaching replies mid-sentence on cloud providers (the reporter
-            // hit it on a DeepSeek "pro" model). 4096 lets a full multi-section reply complete; it is a cap,
-            // not a target, so short answers are unaffected. Matches the Gemini leg's maxOutputTokens.
-            body.put("max_tokens", 4096)
-        }
+        val body = openAiCompatibleBody(provider, model, messages, modernParams = modernParams)
 
         val builder = Request.Builder()
             .url(url)
@@ -784,8 +787,7 @@ class AiCoach(
         val detail = runCatching { parse(text).toString() }.getOrDefault(text).lowercase()
         return detail.contains("max_completion_tokens") ||
             detail.contains("max_tokens") ||
-            detail.contains("temperature") ||
-            detail.contains("unsupported")
+            detail.contains("temperature")
     }
 
     /** Base for the Custom provider, the user's URL with any trailing slashes trimmed. */
@@ -864,13 +866,8 @@ class AiCoach(
         val (code, text) = execute(request)
         if (code !in 200..299) throw httpError(provider, code, text)
 
-        val json = parse(text)
-        val content = json.optJSONArray("content")
-            ?.optJSONObject(0)
-            ?.optString("text")
-            ?.trim()
-
-        if (content.isNullOrEmpty()) throw Exception(emptyReplyMessage(text))
+        val content = anthropicReplyText(parse(text))
+        if (content.isEmpty()) throw Exception(emptyReplyMessage(text))
         return content
     }
 
@@ -900,14 +897,7 @@ class AiCoach(
             )
         }
 
-        val body = JSONObject()
-            .put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt))))
-            .put("contents", contents)
-            // Gemini 2.5 counts THINKING tokens against maxOutputTokens; the 900 cap the other providers
-            // use starves a thinking model into an empty reply (finishReason MAX_TOKENS, no text parts).
-            // 4096 leaves room for both — the system prompt keeps the visible reply short. (Same as Swift.)
-            .put("generationConfig", JSONObject().put("temperature", 0.6).put("maxOutputTokens", 4096))
-            .toString()
+        val body = geminiRequestBody(systemPrompt, contents).toString()
 
         // Built from a literal string (NOT a path-appending API) so the ":" in ":generateContent" stays
         // literal — a percent-encoded %3A is rejected by the API. Mirrors the Swift URL(string:) note.
@@ -921,7 +911,6 @@ class AiCoach(
         val (code, text) = execute(request)
         if (code !in 200..299) throw httpError(provider, code, text)
 
-        // A reply can span several parts (thinking models emit more than one); join them.
         val parts = parse(text)
             .optJSONArray("candidates")?.optJSONObject(0)
             ?.optJSONObject("content")?.optJSONArray("parts")
@@ -937,8 +926,7 @@ class AiCoach(
     // K1: Streaming provider calls (SSE via OkHttp BufferedSource)
     // ---------------------------------------------------------------------------------------
 
-    /** Stream an OpenAI-compatible chat (OpenAI + Custom). Same body as [callOpenAiCompatible]'s
-     *  standard-params path, with `stream: true`. SSE parsed via [SseDeltas.openAiDelta]. */
+    /** Stream the same parameters as [callOpenAiCompatible], with `stream: true` added. */
     private fun callOpenAiCompatibleStream(
         provider: AiProvider,
         url: String,
@@ -953,13 +941,7 @@ class AiCoach(
         messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
         for (m in history) messages.put(JSONObject().put("role", m.role).put("content", m.text))
 
-        val body = JSONObject()
-            .put("model", model)
-            .put("messages", messages)
-            .put("temperature", 0.6)
-            .put("max_tokens", 4096)
-            .put("stream", true)
-            .toString()
+        val body = openAiCompatibleBody(provider, model, messages, stream = true).toString()
 
         val builder = Request.Builder().url(url).addHeader("Content-Type", "application/json")
             .post(body.toRequestBody(JSON))
@@ -967,7 +949,12 @@ class AiCoach(
             AiProvider.CUSTOM -> applyCustomAuthHeader(builder, key, customAuthHeader)
             else -> if (!key.isNullOrBlank()) builder.addHeader("Authorization", "Bearer $key")
         }
-        executeStreaming(builder.build(), provider, onDelta) { payload -> SseDeltas.openAiDelta(payload) }
+        try {
+            executeStreaming(builder.build(), provider, onDelta) { payload -> SseDeltas.openAiDelta(payload) }
+        } catch (e: ProviderHttpError) {
+            if (provider != AiProvider.CUSTOM || e.code != 400 || !shouldRetryOpenAiModernParams(e.body)) throw e
+            onDelta(callOpenAiCompatible(provider, url, model, key, history, systemPrompt, customAuthHeader, modernParams = true))
+        }
     }
 
     /** Stream an Anthropic chat. Same body as [callAnthropic], with `stream: true`. SSE parsed
@@ -1020,11 +1007,7 @@ class AiCoach(
             )
         }
 
-        val body = JSONObject()
-            .put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt))))
-            .put("contents", contents)
-            .put("generationConfig", JSONObject().put("temperature", 0.6).put("maxOutputTokens", 4096))
-            .toString()
+        val body = geminiRequestBody(systemPrompt, contents).toString()
 
         val request = Request.Builder()
             .url("${provider.endpoint}/$model:streamGenerateContent?alt=sse")
@@ -1056,6 +1039,9 @@ class AiCoach(
                 while (!source.exhausted()) {
                     val line = source.readUtf8Line() ?: break
                     val payload = SseDeltas.dataPayload(fromLine = line) ?: continue
+                    if (runCatching { JSONObject(payload).optJSONObject("error") != null }.getOrDefault(false)) {
+                        throw Exception(emptyReplyMessage(payload))
+                    }
                     val delta = extractDelta(payload) ?: continue
                     onDelta(delta)
                 }
@@ -1081,6 +1067,8 @@ class AiCoach(
     // ---------------------------------------------------------------------------------------
     // HTTP / error plumbing
     // ---------------------------------------------------------------------------------------
+
+    private class ProviderHttpError(val code: Int, val body: String, message: String) : Exception(message)
 
     /** Execute a request, mapping low-level network failures to a friendly [Exception]. */
     private fun execute(request: Request): Pair<Int, String> {
@@ -1126,7 +1114,7 @@ class AiCoach(
             else -> "${provider.displayName} returned an error (HTTP $code)."
         }
         val message = if (detail != null) "$base ($detail)" else base
-        return if (isKeyRejection(code)) AiKeyRejectedException(message) else Exception(message)
+        return if (isKeyRejection(code)) AiKeyRejectedException(message) else ProviderHttpError(code, body, message)
     }
 
     /** Pull the provider's error message out of an error JSON body, if present. */
@@ -1193,6 +1181,52 @@ class AiCoach(
     companion object {
         private val JSON = "application/json; charset=utf-8".toMediaType()
 
+        /** Shared request body; Custom servers retain their legacy parameters unless retried. */
+        internal fun openAiCompatibleBody(
+            provider: AiProvider,
+            model: String,
+            messages: JSONArray,
+            modernParams: Boolean = false,
+            stream: Boolean = false,
+        ): JSONObject {
+            val body = JSONObject().put("model", model).put("messages", messages)
+            if (provider == AiProvider.OPENAI || modernParams) {
+                body.put("max_completion_tokens", 4096)
+                if (provider == AiProvider.OPENAI && (model.startsWith("gpt-4") || model.startsWith("gpt-3.5") || model.startsWith("gpt-audio")) && !model.contains("-search")) {
+                    body.put("temperature", 0.6)
+                }
+            } else {
+                body.put("temperature", 0.6).put("max_tokens", 4096)
+            }
+            if (stream) body.put("stream", true)
+            return body
+        }
+
+        /** Exclude models whose endpoints or output formats this text-chat client cannot handle. */
+        internal fun isOpenAiChatModel(id: String): Boolean {
+            val reasoning = id.length > 1 && id[0] == 'o' && id[1] in '0'..'9'
+            val gpt = id.startsWith("gpt")
+            val specialized = listOf("gpt-image", "-pro", "-codex", "-deep-research", "-instruct", "-realtime", "-transcribe", "-tts")
+            return (gpt || reasoning) && specialized.none { id.contains(it) }
+        }
+
+        /** Native Gemini body, preserving the existing sampling value and output cap. */
+        internal fun geminiRequestBody(systemPrompt: String, contents: JSONArray): JSONObject = JSONObject()
+            .put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt))))
+            .put("contents", contents)
+            .put("generationConfig", JSONObject().put("temperature", 0.6).put("maxOutputTokens", 4096))
+
+        /** Thinking and tool blocks may precede or separate the visible text blocks. */
+        internal fun anthropicReplyText(json: JSONObject): String {
+            val blocks = json.optJSONArray("content") ?: return ""
+            return buildString {
+                for (i in 0 until blocks.length()) {
+                    val block = blocks.optJSONObject(i) ?: continue
+                    if (block.optString("type") == "text") append((block.opt("text") as? String).orEmpty())
+                }
+            }.trim()
+        }
+
         /**
          * Whether an HTTP status means the stored key itself was turned away, as opposed to the
          * provider being busy, broken, or asked for something it does not have.
@@ -1245,7 +1279,7 @@ class AiCoach(
 
         /**
          * Pure: unwrap Gemini's `{"models":[{"name":"models/…"}]}` into chat-capable ids. Strips the
-         * `models/` prefix, keeps `gemini*` only (drops embedding / AQA models). Byte-for-byte twin of
+         * `models/` prefix, checks generation capabilities, and drops specialized media models. Twin of
          * the Swift `GeminiClient.parseModels`, so both platforms surface the same fetched catalogue.
          * Pure + `internal` so it is unit-testable without a network or a Context. No network.
          */
@@ -1253,10 +1287,14 @@ class AiCoach(
             val list = runCatching { JSONObject(text).optJSONArray("models") }.getOrNull() ?: return emptyList()
             val ids = ArrayList<String>(list.length())
             for (i in 0 until list.length()) {
-                val name = list.optJSONObject(i)?.optString("name")?.trim().orEmpty()
+                val row = list.optJSONObject(i) ?: continue
+                val name = (row.opt("name") as? String)?.trim().orEmpty()
                 if (name.isEmpty()) continue
                 val id = if (name.startsWith("models/")) name.removePrefix("models/") else name
-                if (id.startsWith("gemini") && !id.contains("embedding") && !id.contains("aqa")) ids.add(id)
+                if (!id.startsWith("gemini") || listOf("embedding", "aqa", "-tts", "-live", "native-audio").any { id.contains(it) }) continue
+                val methods = row.optJSONArray("supportedGenerationMethods")
+                if (methods != null && (0 until methods.length()).none { methods.optString(it) == "generateContent" }) continue
+                ids.add(id)
             }
             return ids.distinct()
         }
@@ -1271,10 +1309,10 @@ class AiCoach(
             if (data != null) {
                 val ids = ArrayList<String>(data.length())
                 for (i in 0 until data.length()) {
-                    val id = data.optJSONObject(i)?.optString("id")?.trim().orEmpty()
+                    val id = (data.optJSONObject(i)?.opt("id") as? String)?.trim().orEmpty()
                     if (id.isEmpty()) continue
                     val keep = when (provider) {
-                        AiProvider.OPENAI -> id.startsWith("gpt") || id.startsWith("o")
+                        AiProvider.OPENAI -> isOpenAiChatModel(id)
                         AiProvider.ANTHROPIC, AiProvider.CUSTOM -> true
                         AiProvider.GEMINI -> true
                     }
@@ -1283,6 +1321,7 @@ class AiCoach(
                 return ids.distinct()
             }
 
+            if (provider != AiProvider.CUSTOM) return emptyList()
             val catalog = json.optJSONArray("catalog") ?: return emptyList()
             val ids = ArrayList<String>()
             for (i in 0 until catalog.length()) {
@@ -1413,6 +1452,17 @@ class AiCoach(
         fun resolveSystemPrompt(ctx: Context): String {
             val custom = NoopPrefs.coachSystemPrompt(ctx).trim()
             return if (custom.isNotEmpty()) custom else DEFAULT_SYSTEM_PROMPT
+        }
+
+        private fun requestSystemPrompt(ctx: Context): String = localizedSystemPrompt(
+            resolveSystemPrompt(ctx), ctx.resources.configuration.locales[0].toLanguageTag(),
+        )
+
+        internal fun localizedSystemPrompt(prompt: String, languageTag: String): String {
+            val tag = languageTag.trim().ifEmpty { "en" }
+            return prompt + "\n\nReply in the app's language (BCP-47: $tag). " +
+                "Use this language even if the context or earlier messages are in another language, " +
+                "unless the user explicitly requests a different language."
         }
 
         /**
