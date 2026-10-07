@@ -171,11 +171,6 @@ final class TrainingCoordinator: ObservableObject {
             case "resume":
                 if model.activeWorkout?.sessionID == id { model.resumeWorkout() }
                 else { lift.resume() }
-                guards[id]?.resume(at: Int(Date().timeIntervalSince1970))
-                lastCheckpoint.removeValue(forKey: id)
-                cancelNotification(id)
-                if let deadline = guards[id]?.deadline { scheduleNotification(id: id, at: Date(timeIntervalSince1970: Double(deadline + 30))) }
-                persistGuards()
             case "requestEnd":
                 confirmations[id] = TrainingEndConfirmation(sessionID: id)
             case "cancelEnd": confirmations.removeValue(forKey: id)

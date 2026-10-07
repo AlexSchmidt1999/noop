@@ -234,7 +234,7 @@ struct StrandiOSApp: App {
                 .environmentObject(router)
                 .environmentObject(UpdateStore.shared)
                 .environmentObject(liftSession)
-                .environment(\.trainingCoordinator, training)
+                .environmentObject(training)
                 // v5 L3: the shared stress check-in nudge surface, so the Breathe screen's passive
                 // card observes the SAME instance the central detector (AppModel.evaluateStress) posts to.
                 .environment(\.stressNudgeCenter, model.stressNudgeCenter)
@@ -341,7 +341,7 @@ struct StrandiOSApp: App {
                 model.drainPendingIntents(router: router)
                 // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
                 // the background comes back now, whether or not the strap is sending anything.
-                pushLiftActivity()
+                training.reconcile()
                 // Only the foreground may start the live heart rate banner: offer it now.
                 liveActivity.appBecameActive()
                 // End a "Connecting…" sync island whose sync never came, rather than leave it greyed.
@@ -405,18 +405,6 @@ struct StrandiOSApp: App {
         }
     }
 
-    /// Map the running session onto the Lock Screen banner.
-    ///
-    /// The wording and the numbers come from `LiftSessionController.presentation`, the same
-    /// resolution the in-app minimised bar renders, so the two surfaces cannot disagree. The heart
-    /// rate is the app's smoothed value, and only while the strap is actually connected — a frozen
-    /// last-known bpm on a Lock Screen reads as live and is not. `alert` lights the Lock Screen for this
-    /// push — see `LiftLiveActivityController.update`.
-    @MainActor
-    private func pushLiftActivity(alert: Bool = false) {
-        training.reconcile()
-        if alert { training.publish(alert: true) }
-    }
 }
 
 /// iOS root — the `RootTabView` shell with the first-run onboarding/pairing wizard overlaid until

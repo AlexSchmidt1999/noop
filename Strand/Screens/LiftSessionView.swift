@@ -91,7 +91,7 @@ struct LiftSessionView: View {
         .dismissesKeyboardOnTap($focused)
         // Re-read whenever the session's exercises change, so an exercise added mid-session that was
         // done before shows last time's numbers in grey, like every other line.
-        .task(id: engine?.plan.map(\.exercise)) { await loadLastTime() }
+        .task(id: engine?.plan.map(\.exercise)) { await session.loadLastSession(repo: repo) }
         // Release a field's draft once the user leaves it, so the row returns to the canonical
         // formatting ("45.50" typed becomes "45.5"). The single-argument form on purpose: the
         // two-argument `onChange` is macOS 14+ and this file also builds for macOS 13.
@@ -794,12 +794,6 @@ struct LiftSessionView: View {
     }
 
     // MARK: - Loading and saving
-
-    /// What was lifted for each of this session's exercises LAST time, by set number — the middle
-    /// layer of the grey numbers, handed to the controller that owns the chain.
-    private func loadLastTime() async {
-        await session.loadLastSession(repo: repo)
-    }
 
     private func save() async {
         guard !saving, let store = await repo.storeHandle() else { return }

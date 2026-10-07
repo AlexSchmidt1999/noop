@@ -4,19 +4,9 @@ import WhoopStore
 import StrandDesign
 import UserNotifications
 
-private struct TrainingCoordinatorKey: EnvironmentKey {
-    static let defaultValue: TrainingCoordinator? = nil
-}
-extension EnvironmentValues {
-    var trainingCoordinator: TrainingCoordinator? {
-        get { self[TrainingCoordinatorKey.self] }
-        set { self[TrainingCoordinatorKey.self] = newValue }
-    }
-}
-
 struct TrainingFavoritesView: View {
     @EnvironmentObject private var repo: Repository
-    @Environment(\.trainingCoordinator) private var training
+    @EnvironmentObject private var training: TrainingCoordinator
     @State private var favorites = TrainingFavorite.load()
     @State private var programs: [LiftProgramRow] = []
     @State private var error: String?
@@ -55,7 +45,7 @@ struct TrainingFavoritesView: View {
         }
         .onChange(of: favorites) { _, values in
             TrainingFavorite.save(values)
-            training?.publish()
+            training.publish()
         }
         .task {
             do {
