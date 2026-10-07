@@ -213,7 +213,7 @@ final class TrainingCoordinator: ObservableObject {
         if timer != nil, let armedDeadline, abs(next - armedDeadline) < 30 { return }
         timer?.cancel()
         armedDeadline = next
-        let delay = max(0.01, next - Date().timeIntervalSince1970)
+        let delay = max(0.01, min(Double(TrainingPulseGuard.timeoutSeconds), next - Date().timeIntervalSince1970))
         timer = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             guard !Task.isCancelled else { return }

@@ -10,7 +10,7 @@ struct TrainingPulseGuard: Codable, Equatable {
     var deadline: Int? {
         let allowance = min(Self.checkpointSeconds, max(0, recoveryAllowance))
         guard let lastSampleSec, lastSampleSec > 0,
-              lastSampleSec <= Int.max - Self.timeoutSeconds - allowance else { return nil }
+              lastSampleSec <= Int.max - Self.timeoutSeconds - allowance - Self.checkpointSeconds else { return nil }
         return lastSampleSec + Self.timeoutSeconds + allowance
     }
     func isDue(at now: Int) -> Bool { deadline.map { now >= $0 } ?? false }

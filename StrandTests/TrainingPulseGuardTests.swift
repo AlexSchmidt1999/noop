@@ -19,6 +19,7 @@ final class TrainingPulseGuardTests: XCTestCase {
             from: Data("{\"lastSampleSec\":9223372036854775807,\"recoveryAllowance\":9223372036854775807}".utf8))
         XCTAssertNil(restored.deadline)
         XCTAssertFalse(restored.isDue(at: 1_000))
+        XCTAssertNil(TrainingPulseGuard(lastSampleSec: Int.max - 600).deadline)
     }
 
     func testResumeAndCheckpointAvoidPrematurePause() throws {
