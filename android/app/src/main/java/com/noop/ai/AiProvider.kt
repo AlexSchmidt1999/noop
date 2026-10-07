@@ -25,13 +25,16 @@ enum class AiProvider(
     OPENAI(
         displayName = "OpenAI",
         defaultModel = "gpt-5-mini",
-        // Versioned model families; fetchModels merges newer releases from the live catalogue.
+        // Pinned ids, not aliases: OpenAI has no stable per-tier "-latest" alias the way Gemini does
+        // (#400), so this list is bumped by hand. The live /models refresh stays the authority for
+        // anything released after this.
         //
-        // Both request paths use max_completion_tokens; classic GPT sampling stays unchanged.
+        // The reasoning tiers (o3, o4-mini) and the GPT-5 family reject `temperature` and
+        // `max_tokens`. Nothing special is needed for them here: [AiCoach] sends the classic
+        // parameters and, on a 400 naming one of them, retries with `max_completion_tokens` and no
+        // temperature. One extra round trip on the first message, not a per-model table to maintain.
         // Twin of the Swift `AIProvider.modelOptions`.
         models = listOf(
-            "gpt-5.4",
-            "gpt-5.4-mini",
             "gpt-5",
             "gpt-5-mini",
             "gpt-5-nano",
@@ -50,11 +53,13 @@ enum class AiProvider(
         displayName = "Anthropic",
         defaultModel = "claude-sonnet-4-6",
         models = listOf(
-            "claude-opus-5-5",
-            "claude-sonnet-5-5",
             "claude-opus-4-8",
             "claude-sonnet-4-6",
             "claude-haiku-4-5-20251001",
+            "claude-3-7-sonnet-latest",
+            "claude-3-5-sonnet-latest",
+            "claude-3-5-haiku-latest",
+            "claude-3-opus-latest",
         ),
         endpoint = "https://api.anthropic.com/v1/messages",
         modelsEndpoint = "https://api.anthropic.com/v1/models",
@@ -67,9 +72,12 @@ enum class AiProvider(
      * models URL; the per-call `/<model>:generateContent` suffix is appended in [AiCoach.callGemini]
      * (kept literal so the `:` is never percent-encoded).
      *
-     * The default and curated list use provider-managed `-latest` aliases, which may point to stable
-     * or preview releases. [AiCoach.fetchModels] lists compatible text-generation models so the user
-     * can pin a concrete version. Same list and default as the Swift enum.
+     * VERSION-CHURN-FREE (#400): the default + curated list use Google's stable `-latest` ALIASES, which
+     * always resolve to the current stable model in each tier — so Gemini's rapid releases (2.5 → 3.x → …)
+     * never need a code bump here. The dropdown itself is already version-agnostic: [AiCoach.fetchModels]
+     * queries the live `/models` catalogue and [AiCoach.parseGeminiModels] keeps EVERY `gemini*` id, so a
+     * user with a key sees whatever concrete versions Google currently serves and can pin one. Same list +
+     * default as the Swift enum.
      */
     GEMINI(
         displayName = "Google Gemini",
