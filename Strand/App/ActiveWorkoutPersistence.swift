@@ -30,6 +30,8 @@ enum ActiveWorkoutPersistence {
         var liveStrain: Double
         var pausedAtSec: Int? = nil
         var pausedDurationSec: Int? = nil
+        var sessionID: String? = nil
+        var pausedForPulseLoss: Bool? = nil
     }
 
     /// The single `UserDefaults` key (JSON-encoded `Snapshot`). Namespaced like `moments`/`sleepMarks`.

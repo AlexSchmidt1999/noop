@@ -50,6 +50,20 @@ final class LiftSessionTimingTests: XCTestCase {
         XCTAssertEqual(c.presentation(system: .metric)?.status, "Ready for the next set")
     }
 
+    func testPauseCancelsRestWarningAndPreservesTheRemainingTime() {
+        var buzzes: [UInt8] = []
+        let controller = LiftSessionController(buzz: { buzzes.append($0) }, setStrapHandler: { _ in })
+        controller.start(plan: plan(restSec: 2), programId: nil, programName: nil)
+        controller.advance()
+        controller.advance()
+        controller.pause()
+        let remaining = controller.engine?.restRemaining(now: LiftSessionController.unixNow)
+        RunLoop.main.run(until: Date().addingTimeInterval(2.5))
+        XCTAssertEqual(buzzes, [])
+        XCTAssertEqual(controller.engine?.restRemaining(now: LiftSessionController.unixNow), remaining)
+        XCTAssertEqual(LiftSessionPersistence.load()?.pausedAt, controller.engine?.pausedAt)
+    }
+
     /// When the warning and the end fire. A rest inside the warning window warns a second from now, clear of
     /// the tap's own buzz; a rest already over has no end to wait for.
     func testRestEventTimes() {
