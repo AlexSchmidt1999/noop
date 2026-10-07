@@ -77,7 +77,7 @@ final class LiftLiveActivityController {
     /// Dynamic Island instead. ActivityKit offers no setting for vibration; the sound is silence.
     /// Returns what happened about lighting when `alert` was asked for; nil otherwise.
     @discardableResult
-    func update(state: LiftActivityAttributes.ContentState?, alert: Bool = false) -> LightUp? {
+    func update(state: LiftActivityAttributes.ContentState?, alert: Bool = false, allowBackgroundStart: Bool = false) -> LightUp? {
         guard authInfo.areActivitiesEnabled else { return alert ? .noBanner : nil }
 
         // A banner the lifter swiped off the Lock Screen, or one iOS ended, takes no more updates: let it
@@ -108,6 +108,10 @@ final class LiftLiveActivityController {
             state.detail ?? "", state.next,
             "\(state.stageStartedAt.timeIntervalSince1970)",
             "\(state.restEndsAt?.timeIntervalSince1970 ?? 0)",
+            "\(state.training?.pausedAt?.timeIntervalSince1970 ?? 0)",
+            state.training?.id ?? "",
+            state.training?.confirmationToken ?? "",
+            state.training?.error ?? "",
         ].joined(separator: "|")
 
         let contentChanged = signature != lastSignature
@@ -137,7 +141,7 @@ final class LiftLiveActivityController {
         } else {
             // iOS starts a Live Activity only for the app on screen; asked from the background it throws,
             // and this runs several times a second. The banner comes back the next time NOOP is opened.
-            guard UIApplication.shared.applicationState == .active else {
+            guard UIApplication.shared.applicationState == .active || allowBackgroundStart else {
                 if !waitingForForeground {
                     waitingForForeground = true
                     log("Lift Log: no Lock Screen banner — iOS starts one only while NOOP is open, so it "

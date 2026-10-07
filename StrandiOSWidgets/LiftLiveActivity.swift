@@ -17,7 +17,14 @@ import StrandDesign
 struct LiftLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiftActivityAttributes.self) { context in
-            lockScreen(context.state)
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                lockScreen(context.state)
+                if let training = context.state.training {
+                    TrainingControls(training: training, labels: context.state.trainingLabels ?? [:])
+                        .padding(.horizontal, NoopMetrics.rowSpacing)
+                        .padding(.bottom, NoopMetrics.rowSpacing)
+                }
+            }
                 .activityBackgroundTint(StrandPalette.surfaceBase)
                 .activitySystemActionForegroundColor(StrandPalette.textPrimary)
         } dynamicIsland: { context in
@@ -40,6 +47,7 @@ struct LiftLiveActivity: Widget {
                                      : StrandPalette.metricRose)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                     HStack {
                         Text(context.state.detail ?? context.state.status)
                             .font(.caption).lineLimit(1)
@@ -47,6 +55,10 @@ struct LiftLiveActivity: Widget {
                         Spacer(minLength: 8)
                         clock(context.state, tint: tint)
                             .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    }
+                    if let training = context.state.training {
+                        TrainingControls(training: training, labels: context.state.trainingLabels ?? [:])
+                    }
                     }
                 }
             } compactLeading: {
@@ -172,7 +184,9 @@ struct LiftLiveActivity: Widget {
     /// nothing, so that end is pushed a day out — well beyond any session.
     private func clock(_ state: LiftActivityAttributes.ContentState, tint: Color) -> some View {
         Group {
-            if let ends = state.restEndsAt {
+            if let training = state.training, let pausedAt = training.pausedAt {
+                Text(timerInterval: state.stageStartedAt...max(state.stageStartedAt, pausedAt), pauseTime: pausedAt, countsDown: false)
+            } else if let ends = state.restEndsAt {
                 if ends > state.stageStartedAt {
                     Text(timerInterval: state.stageStartedAt...ends, countsDown: true)
                 } else {
