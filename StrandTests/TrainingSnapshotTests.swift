@@ -10,6 +10,19 @@ final class TrainingSnapshotTests: XCTestCase {
         XCTAssertFalse(confirmation.accepts(sessionID: "first", token: confirmation.token, now: now.addingTimeInterval(30)))
     }
 
+    func testConfirmationSurvivesRestartButExpiredAndFutureSnapshotsDoNot() throws {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let confirmation = TrainingEndConfirmation(sessionID: "first", now: now)
+        var display = TrainingDisplay(id: "first", kind: "workout", title: "Run", clockStart: now,
+                                      confirmationUntil: confirmation.until, confirmationToken: confirmation.token)
+        display = try JSONDecoder().decode(TrainingDisplay.self, from: JSONEncoder().encode(display))
+        let restored = try XCTUnwrap(TrainingEndConfirmation(restoring: display, now: now.addingTimeInterval(15)))
+        XCTAssertTrue(restored.accepts(sessionID: "first", token: confirmation.token, now: now.addingTimeInterval(29)))
+        XCTAssertNil(TrainingEndConfirmation(restoring: display, now: now.addingTimeInterval(30)))
+        display.confirmationUntil = now.addingTimeInterval(100)
+        XCTAssertNil(TrainingEndConfirmation(restoring: display, now: now))
+    }
+
     func testThreeFavoritesRoundTripAndRejectCorruptSlots() throws {
         let suite = "training-tests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

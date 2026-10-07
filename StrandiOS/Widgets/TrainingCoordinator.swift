@@ -11,6 +11,7 @@ import SwiftUI
 @MainActor
 final class TrainingCoordinator: ObservableObject {
     @Published var foregroundConfirmation: TrainingDisplay?
+    @Published var foregroundPulseLoss: TrainingDisplay?
     @Published var foregroundError: String?
     static let pulseStateKey = "noop.trainingPulseState"
     private let model: AppModel
@@ -35,6 +36,9 @@ final class TrainingCoordinator: ObservableObject {
         self.model = model; self.lift = lift; self.liftActivity = liftActivity
         guards = UserDefaults.standard.data(forKey: Self.pulseStateKey)
             .flatMap { try? JSONDecoder().decode([String: TrainingPulseGuard].self, from: $0) } ?? [:]
+        for session in TrainingSnapshot.load().sessions {
+            if let confirmation = TrainingEndConfirmation(restoring: session) { confirmations[session.id] = confirmation }
+        }
         // Install before any scene; receipt precedes biometric publication, including after a long suspension.
         model.live.onReadableHeartRate = { [weak self] date in self?.receivedPulse(at: date) }
         TrainingIntentHandler.perform = { [weak self] action, id, favorite, token in
@@ -97,6 +101,7 @@ final class TrainingCoordinator: ObservableObject {
     func reconcile(at date: Date = Date(), publish shouldPublish: Bool = true) {
         let now = Int(date.timeIntervalSince1970)
         let active = Set(ids)
+        var pulseLossID: String?
         let wantsRealtimeHR = !active.isEmpty
         if wantsRealtimeHR != holdsRealtimeHR {
             holdsRealtimeHR = wantsRealtimeHR
@@ -119,16 +124,21 @@ final class TrainingCoordinator: ObservableObject {
                 persistGuards()
             }
             if paused && wasPaused[id] != true { cancelNotification(id) }
+            if paused && wasPaused[id] == nil && (model.activeWorkout?.sessionID == id
+                ? model.activeWorkout?.pausedForPulseLoss == true : lift.pausedForPulseLoss) { pulseLossID = id }
             if !paused, let guardState = guards[id], guardState.isDue(at: now), let deadline = guardState.deadline {
                 pause(id, at: Date(timeIntervalSince1970: Double(deadline)), pulseLoss: true)
                 cancelNotification(id)
                 scheduleNotification(id: id, at: date.addingTimeInterval(1))
                 persistGuards()
+                pulseLossID = id
             }
             wasPaused[id] = isPaused(id)
         }
         confirmations = confirmations.filter { active.contains($0.key) && $0.value.until > date }
-        if shouldPublish { publish() }
+        if let prompt = foregroundPulseLoss, !active.contains(prompt.id) || !isPaused(prompt.id) { foregroundPulseLoss = nil }
+        if shouldPublish || pulseLossID != nil { publish() }
+        if let pulseLossID { foregroundPulseLoss = TrainingSnapshot.load().sessions.first { $0.id == pulseLossID } }
         armTimer()
     }
 
@@ -257,12 +267,20 @@ final class TrainingCoordinator: ObservableObject {
         if let p = lift.presentation(system: UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "") ?? .metric) {
             var state = LiftActivityAttributes.ContentState(isResting: p.isResting, exercise: p.exercise, status: p.status, detail: p.detail,
                                                            bpm: model.live.connected ? model.bpm : nil, next: p.next, stageStartedAt: p.stageStartedAt, restEndsAt: p.restEndsAt)
+            if let engine = lift.engine, engine.isPaused, case .resting(_, let endsAt) = engine.stage {
+                state.isResting = true
+                state.restEndsAt = Date(timeIntervalSince1970: Double(endsAt))
+            }
             state.training = sessions.first(where: { $0.kind == "lift" }); state.trainingLabels = labels
             liftActivity.update(state: state, alert: alert, allowBackgroundStart: canStartFromIntent)
         } else { liftActivity.update(state: nil) }
     }
     private func pushWorkout(_ display: TrainingDisplay?) {
         if let current = workoutActivity, [.ended, .dismissed].contains(current.activityState) { workoutActivity = nil }
+        if let current = workoutActivity, let display, current.attributes.sessionID != display.id {
+            workoutActivity = nil; lastWorkoutState = nil
+            Task { await current.end(nil, dismissalPolicy: .immediate) }
+        }
         if workoutActivity == nil { workoutActivity = Activity<WorkoutActivityAttributes>.activities.first { $0.attributes.sessionID == display?.id && ![.ended, .dismissed].contains($0.activityState) } }
         guard let display, UserDefaults.standard.object(forKey: "noop.workoutLiveActivity") as? Bool ?? true,
               ActivityAuthorizationInfo().areActivitiesEnabled else {

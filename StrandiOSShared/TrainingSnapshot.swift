@@ -62,6 +62,11 @@ struct TrainingEndConfirmation: Equatable {
     init(sessionID: String, now: Date = Date()) {
         self.sessionID = sessionID; token = UUID().uuidString; until = now.addingTimeInterval(30)
     }
+    init?(restoring training: TrainingDisplay, now: Date = Date()) {
+        guard let token = training.confirmationToken, let until = training.confirmationUntil,
+              now < until, until.timeIntervalSince(now) <= 30 else { return nil }
+        sessionID = training.id; self.token = token; self.until = until
+    }
     func accepts(sessionID: String, token: String, now: Date = Date()) -> Bool {
         self.sessionID == sessionID && self.token == token && now < until
     }

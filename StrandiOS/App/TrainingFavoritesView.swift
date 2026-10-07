@@ -80,7 +80,21 @@ struct TrainingFavoritesView: View {
 struct TrainingNotificationConfirmation: ViewModifier {
     @ObservedObject var training: TrainingCoordinator
     func body(content: Content) -> some View {
-        content.alert("Really end training?", isPresented: Binding(
+        content.alert("Still training?", isPresented: Binding(
+            get: { training.foregroundPulseLoss != nil },
+            set: { if !$0 { training.foregroundPulseLoss = nil } })) {
+            if let session = training.foregroundPulseLoss {
+                Button("Resume") { Task { try? await training.perform("resume", id: session.id) } }
+                Button("End training") {
+                    Task {
+                        try? await training.perform("requestEnd", id: session.id)
+                        training.foregroundConfirmation = TrainingSnapshot.load().sessions.first { $0.id == session.id }
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("No live heart rate for ten minutes. Check your training or resume it.") }
+        .alert("Really end training?", isPresented: Binding(
             get: { training.foregroundConfirmation != nil },
             set: { if !$0 { training.foregroundConfirmation = nil } })) {
             if let session = training.foregroundConfirmation {

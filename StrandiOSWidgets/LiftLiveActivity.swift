@@ -184,17 +184,15 @@ struct LiftLiveActivity: Widget {
     /// nothing, so that end is pushed a day out — well beyond any session.
     private func clock(_ state: LiftActivityAttributes.ContentState, tint: Color) -> some View {
         Group {
-            if let training = state.training, let pausedAt = training.pausedAt {
-                Text(timerInterval: state.stageStartedAt...max(state.stageStartedAt, pausedAt), pauseTime: pausedAt, countsDown: false)
-            } else if let ends = state.restEndsAt {
+            if let ends = state.restEndsAt {
                 if ends > state.stageStartedAt {
-                    Text(timerInterval: state.stageStartedAt...ends, countsDown: true)
+                    Text(timerInterval: state.stageStartedAt...ends, pauseTime: state.training?.pausedAt, countsDown: true)
                 } else {
                     Text(verbatim: "0:00")
                 }
             } else {
                 Text(timerInterval: state.stageStartedAt...state.stageStartedAt.addingTimeInterval(86_400),
-                     countsDown: false)
+                     pauseTime: state.training?.pausedAt, countsDown: false)
             }
         }
         .monospacedDigit()
