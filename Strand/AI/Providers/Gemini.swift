@@ -79,26 +79,8 @@ struct GeminiClient: AIProviderClient {
         session: URLSession,
         onDelta: (String) -> Void
     ) async throws {
-        let contents = GeminiClient.buildContents(from: messages)
-
-        let body = geminiRequestBody(systemPrompt: systemPrompt, contents: contents)
-
-        // :streamGenerateContent?alt=sse — SSE line-per-chunk. Built via URL(string:) to avoid
-        // appendingPathComponent percent-encoding the ":" (same note as `send`).
-        guard let url = URL(string: "\(AIProvider.gemini.endpoint.absoluteString)/\(model):streamGenerateContent?alt=sse") else {
-            throw AICoachError.network("invalid model id")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue(key, forHTTPHeaderField: "x-goog-api-key")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        try await performStreamingRequest(req, session: session) { payload in
-            if let delta = SseDeltas.geminiDelta(payload) {
-                onDelta(delta)
-            }
-        }
+        try await streamWithImage(key: key, model: model, systemPrompt: systemPrompt,
+                                  messages: messages, inlineImage: nil, session: session, onDelta: onDelta)
     }
 
     /// K11: Stream with an optional inline image (base64 PNG). Appends the image as
