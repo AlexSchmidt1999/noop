@@ -307,10 +307,8 @@ struct TodayView: View {
     // the deferred set immediately (belt-and-braces alongside the coalesced refreshSeq bump). A bare boolean
     // that flips ~twice per offload, so it costs nothing like the per-tick chunk count would.
     @State private var liveBackfillingFlag = false
-    // #1164: mirror of `LiveState.historyPendingSync` (strap has banked records newer than our frontier).
-    // Bridged through the same `BackfillFlagBridge` as `liveBackfillingFlag` (no second LiveState observer).
-    // Drives the Today Rest "Pending sync" state so a provisional score isn't shown as final.
-    @State private var liveHistoryPendingSyncFlag = false
+    // Coalesced offload/history state shared by both Rest readouts; chunk gaps do not flash the hint.
+    @State private var livePendingSyncFlag = false
     // #755: have the history-wide reads ever populated this session? Used so the FIRST load always runs them
     // (even mid-offload, so a cold launch during a sync is never a blank dashboard), while later re-loads can
     // safely defer them during an active backfill.
@@ -1553,7 +1551,7 @@ struct TodayView: View {
             // the boolean EDGE up. loadAll reads the flag to defer the heavy history-wide reads during an
             // active offload; the off→false edge below re-runs them as a safety net to the coalesced refresh.
             .background(BackfillFlagBridge(flag: $liveBackfillingFlag,
-                                            pendingSyncFlag: $liveHistoryPendingSyncFlag))
+                                            pendingSyncFlag: $livePendingSyncFlag))
         }
         // Reload when the data refreshes OR the selected day changes, the HR trend and Rest score are
         // day-scoped, so navigating must re-fetch them for the newly selected window.
@@ -3212,9 +3210,7 @@ struct TodayView: View {
             // `provenanceKey` spells the same string the route does and stays a literal on purpose: it
             // asks which SOURCE won this day, not which catalog entry to open. See `HeroRingMetric`.
             heroRingColumn(section: .rest, domain: .rest, provenanceKey: "sleep_performance",
-                           detailRoute: .metric(HeroRingMetric.rest),
-                           caption: "Pending sync", captionVisible: restIsPendingSync,
-                           captionWidth: ring) { restRing(diameter: ring) }
+                           detailRoute: .metric(HeroRingMetric.rest)) { restRing(diameter: ring) }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         // Zero-impact width reader: a clear background that publishes the row's width up via preference. It
@@ -3271,8 +3267,6 @@ struct TodayView: View {
     private func heroRingColumn<RingBody: View>(
         section: ScoreSection, domain: DomainTheme, provenanceKey: String? = nil,
         onOpenBreakdown: (() -> Void)? = nil, detailRoute: TabRoute? = nil,
-        caption: LocalizedStringKey? = nil, captionVisible: Bool = true,
-        captionWidth: CGFloat = 98,
         @ViewBuilder ring: () -> RingBody
     ) -> some View {
         VStack(spacing: 8) {
@@ -3311,36 +3305,41 @@ struct TodayView: View {
             // ONE chevron affordance under every ring, so the row reads uniformly (no second cue on the
             // Charge ring). Charge's chevron opens the "what shaped it" breakdown (its richest explanation);
             // Effort / Rest open their scoring-guide section.
-            Button { if let onOpenBreakdown { onOpenBreakdown() } else { guideSection = section } } label: {
-                HStack(spacing: 3) {
-                    // #937: an invisible LEADING twin of the trailing chevron. The word + chevron used to
-                    // centre as ONE block, which pushed the word visibly off the ring's axis (worst on short
-                    // labels like REST). Balancing the row with a same-sized clear chevron re-centres the
-                    // WORD itself under the ring while the real chevron stays visible on the trailing side.
-                    // opacity(0) keeps its layout slot (a conditional would remove it), and the HStack stays
-                    // plain leading-to-trailing content with no alignment-guide math, so LTR and RTL mirror
-                    // identically. Hidden from VoiceOver: it is a spacer, not content.
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
-                        .opacity(0)
-                        .accessibilityHidden(true)
-                    // The CHARGE/EFFORT/REST hero label is localized: the catalog key is the natural-case
-                    // domain word (Charge/Effort/Rest) and `.textCase(.uppercase)` does the uppercasing in
-                    // the current locale, so a de/es/ru build shows the translated word, not the English id.
-                    Text(Self.domainLabel(domain))
-                        .textCase(.uppercase)
-                        .font(StrandFont.overline)
-                        .tracking(StrandFont.overlineTracking)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
-                        .opacity(0.6)
+            HStack(spacing: 3) {
+                // Keep the balancing chevron's existing slot; a sync cue must not move the Rest label.
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .opacity(0)
+                    .accessibilityHidden(true)
+                    .overlay {
+                        if domain == .rest {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(StrandFont.overline)
+                                .foregroundStyle(StrandPalette.textTertiary)
+                                .opacity(restIsPendingSync ? 1 : 0)
+                                .help("Pending sync · strap history still offloading")
+                                .accessibilityLabel("Pending sync · strap history still offloading")
+                                .accessibilityHidden(!restIsPendingSync)
+                        }
+                    }
+                Button { if let onOpenBreakdown { onOpenBreakdown() } else { guideSection = section } } label: {
+                    HStack(spacing: 3) {
+                        // The catalog stores the natural-case domain word; uppercase follows its locale.
+                        Text(Self.domainLabel(domain))
+                            .textCase(.uppercase)
+                            .font(StrandFont.overline)
+                            .tracking(StrandFont.overlineTracking)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .opacity(0.6)
+                    }
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .contentShape(Rectangle())
                 }
-                .foregroundStyle(StrandPalette.textSecondary)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityLabel(onOpenBreakdown == nil ? Self.domainGuideAccessibilityLabel(domain)
+                                                            : "See what shaped your Charge")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(onOpenBreakdown == nil ? Self.domainGuideAccessibilityLabel(domain)
-                                                        : "See what shaped your Charge")
             // Component 4, the real per-day source under the ring (only when this score has a value for
             // the day AND we resolved its winner; a calibrating / empty ring shows no provenance badge).
             // Apple Watch (M1): a watch-sourced score reads "Apple Watch" with its confidence bound to the
@@ -3361,23 +3360,6 @@ struct TodayView: View {
                     SourceBadge("\(label)", tint: provenanceTint(key))
                         .accessibilityLabel("Source: \(label)")
                 }
-            }
-            // Reserve the caption's natural height so brief pending-sync changes cannot move the cards below.
-            if let caption {
-                // Bounded to the RING's width, not left to size itself. Unlike Android, whose three hero
-                // columns are laid out at a fixed `col` width, these columns take the width of what is in
-                // them — so an unbounded caption would widen this one on a longer translation and tip the
-                // trio off centre. Two lines at the ring's width fits the longest of them; the shrink is
-                // the same allowance the domain label above it already uses.
-                Text(caption)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: captionWidth)
-                    .opacity(captionVisible ? 1 : 0)
-                    .accessibilityHidden(!captionVisible)
             }
         }
     }
@@ -3426,11 +3408,11 @@ struct TodayView: View {
     }
 
     /// Whether today's Rest is provisional because the strap still has records to send. Resolved once and
-    /// read by both surfaces that say so — the hero column's caption and the Rest tile's — so the two can
+    /// read by both surfaces that say so — the hero's sync cue and the Rest tile's caption — so the two can
     /// never disagree about the same moment.
     private var restIsPendingSync: Bool {
         Self.restPendingSync(restScore: restScore, backfilling: liveBackfillingFlag,
-                             historyPendingSync: liveHistoryPendingSyncFlag,
+                             historyPendingSync: livePendingSyncFlag,
                              isTodaySelected: selectedDayOffset == 0)
     }
 
@@ -5605,13 +5587,10 @@ private struct RecordingStatusLight: View {
 /// This leaf owns the observation but renders nothing and re-renders only itself; it pushes only the
 /// boolean EDGE up (not the per-tick chunk count), and writes the binding from `.onAppear`/`.onChange`
 /// (never during its own body evaluation). The parent's @State therefore flips ~twice per offload, not 1 Hz.
-private struct BackfillFlagBridge: View {
+struct BackfillFlagBridge: View {
     @EnvironmentObject private var live: LiveState
     @Binding var flag: Bool
-    /// #1164: optional mirror of `LiveState.historyPendingSync` (strap has banked records newer than our
-    /// frontier). Bridged through the SAME invisible leaf so a second LiveState observer isn't added to
-    /// the view tree (the 1 Hz flood isolation the top-of-type note describes). nil when the caller
-    /// doesn't need it.
+    /// Coalesced presentation state; the raw backfill flag above still controls deferred data reads.
     @Binding var pendingSyncFlag: Bool
     var body: some View {
         Color.clear
@@ -5619,10 +5598,9 @@ private struct BackfillFlagBridge: View {
             .accessibilityHidden(true)
             .onAppear {
                 if flag != live.backfilling { flag = live.backfilling }
-                if pendingSyncFlag != live.historyPendingSync { pendingSyncFlag = live.historyPendingSync }
             }
             .onChangeCompat(of: live.backfilling) { now in if flag != now { flag = now } }
-            .onChangeCompat(of: live.historyPendingSync) { now in if pendingSyncFlag != now { pendingSyncFlag = now } }
+            .debouncedSyncSignal(live.backfilling || live.historyPendingSync, into: $pendingSyncFlag)
     }
 }
 

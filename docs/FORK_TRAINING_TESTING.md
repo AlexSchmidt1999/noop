@@ -118,6 +118,22 @@ doc-comment and source/binary policy checks passed. These checks do not reproduc
 reported brief transition on an iPhone. Repeat a history sync on classic Today and verify
 that the cards below the rings keep their position as the pending caption changes.
 
+## Quieter pending-sync presentation (build 443)
+
+The Rest hero now uses a static sync glyph in the label's existing balancing slot.
+It adds neither a caption row nor reserved caption height. The explanation remains
+available to VoiceOver and in the Rest metric tile, and the score and source stay visible.
+Both Rest readouts share one pending presentation flag through the existing invisible
+backfill bridge. The flag includes active offload and pending history, and reuses the
+header's three-second hide delay across brief chunk gaps. Unchanged visible states are
+not republished. The raw backfill flag still reaches data-read scheduling immediately.
+
+The macOS app and 22 targeted tests passed, including a hosted SwiftUI test of a chunk
+gap, hide cancellation by pending history, pulse updates and eventual clearance.
+The iOS Release app, widgets and watch targets compiled; translation, doc-comment and
+source/binary policy checks passed. Verify the cue's appearance, VoiceOver explanation
+and stable card positions during a real strap sync on the iPhone.
+
 ## Configure link follow-up (build 440)
 
 Unassigned favorite tiles and empty training widgets use a native link to the existing

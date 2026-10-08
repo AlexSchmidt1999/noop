@@ -2290,7 +2290,7 @@ private struct DebouncedSyncSignal: ViewModifier {
     private func apply(_ raw: Bool) {
         hideTask?.cancel()
         guard !raw else {
-            debounced = true                        // a sync is active — show at once
+            if !debounced { debounced = true }      // a sync is active — show at once
             return
         }
         guard debounced else { return }
