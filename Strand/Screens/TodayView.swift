@@ -1495,10 +1495,7 @@ struct TodayView: View {
                 // The "still building" and "new here?" prompts are about getting today's scores going,
                 // so they stay anchored to today rather than reappearing on every navigated past day.
                 if selectedDayOffset == 0 && repo.today?.recovery == nil {
-                    // While the strap is mid-offload, say so, empty tiles read as final otherwise (#77).
-                    // Its own subview observes LiveState (backfilling + chunk count tick during an offload)
-                    // so it refreshes without re-rendering the rest of Today (scroll-stutter fix).
-                    SyncingHistoryNoteIfBackfilling()
+                    // Sync progress stays in the header and Data Sources; inserting a note moves the cards.
                     if !scoresBuildingDismissed {
                         DataPendingNote(
                             title: "Live now. Your scores are building.",
@@ -5609,15 +5606,6 @@ private struct RecordingStatusLight: View {
     }
 }
 
-/// The "Syncing strap history…" note, shown only while a historical offload is running (#77). Owns the
-/// `LiveState` observation so the chunk count ticks without re-rendering the rest of Today.
-private struct SyncingHistoryNoteIfBackfilling: View {
-    @EnvironmentObject private var live: LiveState
-    var body: some View {
-        if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-    }
-}
-
 /// #755: a zero-size leaf that mirrors `LiveState.backfilling` into a parent `@Binding` so TodayView can
 /// read the offload state to defer its heavy reads WITHOUT itself observing LiveState (which would re-flood
 /// the whole dashboard `body` on every ~1 Hz live tick, the scroll-stutter the rest of this file avoids).
@@ -5645,39 +5633,44 @@ private struct BackfillFlagBridge: View {
     }
 }
 
-/// Honest strap-sync outcome row for the Data Sources card (ports the Android Live line, ed6a31d): the
-/// stalled-offload error when the last one died, else "History synced N ago". Hidden while an offload
-/// runs, the SyncingHistoryNote already says so. The `TimelineView` re-renders the relative label each
-/// minute. Owns the `LiveState` observation (scroll-stutter isolation).
+/// Persistent sync progress/outcome in Data Sources; chunk transitions never insert or remove a row.
+/// Owns LiveState and the minute clock so updates do not rebuild Today's charts.
 private struct StrapSyncRow: View {
     @EnvironmentObject private var live: LiveState
+    @State private var syncing = false
     var body: some View {
-        if !live.backfilling {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                HStack(alignment: .top, spacing: 10) {
-                    SourceBadge("Strap sync",
-                                tint: live.lastSyncError != nil ? StrandPalette.statusWarning
-                                    : live.lastSyncedAt != nil ? StrandPalette.accent
-                                    : StrandPalette.textTertiary)
-                    Spacer()
-                    if let error = live.lastSyncError {
-                        Text(error)
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.statusWarning)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else if let at = live.lastSyncedAt {
-                        Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                    } else {
-                        Text("Not synced yet")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textTertiary)
-                    }
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            HStack(alignment: .top, spacing: NoopMetrics.rowSpacing) {
+                SourceBadge("Strap sync",
+                            tint: syncing ? StrandPalette.accent
+                                : live.lastSyncError != nil ? StrandPalette.statusWarning
+                                : live.lastSyncedAt != nil ? StrandPalette.accent
+                                : StrandPalette.textTertiary)
+                Spacer()
+                if syncing {
+                    Text(SyncActivityCopy.syncing(chunks: live.syncChunksThisSession, pagesBehind: nil).status)
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.accent)
+                        .lineLimit(1)
+                } else if let error = live.lastSyncError {
+                    Text(error)
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.statusWarning)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let at = live.lastSyncedAt {
+                    Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.textSecondary)
+                        .lineLimit(1)
+                } else {
+                    Text("Not synced yet")
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.textTertiary)
                 }
             }
         }
+        .debouncedSyncSignal(live.backfilling, into: $syncing)
     }
 }
 

@@ -83,3 +83,17 @@ do not reproduce iOS vibrancy or system presentation; test light/dark, tinted wi
 Always-On contrast and larger text on the phone. Verify both cancel and confirmed end in the
 new layout, including during a Lift rest. The widget gallery is now confirmed visible by the
 user on the phone.
+
+## Today sync layout follow-up (build 438)
+
+Classic Today no longer inserts a separate syncing/chunk note near its scores. Progress stays
+in the existing header and Data Sources row; the Data Sources row remains present during sync.
+Liquid Today's history row also remains present before the first completed sync. Both detailed
+rows reuse the header's existing sync-end debounce and shared chunk copy. Progress text stays
+on one line; classic sync errors retain their full readable explanation.
+
+The local macOS app build and 20 targeted snapshot/sync tests passed. The iOS Release app,
+widget and watch targets compiled; translation, doc-comment and source/binary security checks
+passed. Local widget layout renders remain within the previous size limits. On iPhone, repeat
+a long sync with Liquid Today enabled and disabled, while scrolling and switching tabs. These
+checks do not establish that the owner's intermittent hitch has disappeared on hardware.

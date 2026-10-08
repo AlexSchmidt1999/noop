@@ -2305,7 +2305,7 @@ private struct DebouncedSyncSignal: ViewModifier {
     }
 }
 
-private extension View {
+extension View {
     /// Drive `debounced` from the raw sync signal through the shared debounce above.
     func debouncedSyncSignal(_ raw: Bool, into debounced: Binding<Bool>) -> some View {
         modifier(DebouncedSyncSignal(raw: raw, debounced: debounced))
@@ -3120,29 +3120,30 @@ private extension View {
 /// card as the detailed view; `LiquidBatteryButton` above is the header's ambient at-a-glance signal.
 private struct LiquidSyncStatusRow: View {
     @EnvironmentObject var live: LiveState
+    @State private var syncing = false
     var body: some View {
-        if live.backfilling {
-            row(String(localized: "Strap history"), value: chunks, tone: StrandPalette.accent)
-        } else if let ts = live.lastSyncedAt {
-            row(String(localized: "Strap history"),
-                value: String(localized: "Synced \(relativeAgo(ts))"), tone: StrandPalette.textPrimary)
+        Group {
+            if syncing {
+                row(String(localized: "Strap history"), value: chunks, tone: StrandPalette.accent)
+            } else if let ts = live.lastSyncedAt {
+                row(String(localized: "Strap history"),
+                    value: String(localized: "Synced \(relativeAgo(ts))"), tone: StrandPalette.textPrimary)
+            } else {
+                row(String(localized: "Strap history"), value: String(localized: "Not synced yet"), tone: StrandPalette.textTertiary)
+            }
         }
+        .debouncedSyncSignal(live.backfilling, into: $syncing)
     }
 
-    /// "Syncing…" alone reads as a spinner that might be stuck; the chunk count is the cheapest available
-    /// proof that the drain is actually moving. Suppressed at zero — a session that has pulled nothing yet
-    /// should not claim "0 chunks pulled" as if that were progress.
     private var chunks: String {
-        live.syncChunksThisSession > 0
-            ? String(localized: "Syncing… \(live.syncChunksThisSession) chunks")
-            : String(localized: "Syncing…")
+        SyncActivityCopy.syncing(chunks: live.syncChunksThisSession, pagesBehind: nil).status
     }
 
     private func row(_ label: String, value: String, tone: Color) -> some View {
         HStack {
             Text(label).font(StrandFont.subhead).foregroundStyle(StrandPalette.textSecondary)
             Spacer()
-            Text(value).font(StrandFont.subhead).foregroundStyle(tone)
+            Text(value).font(StrandFont.subhead).foregroundStyle(tone).lineLimit(1)
         }
         .accessibilityElement(children: .combine)
     }
