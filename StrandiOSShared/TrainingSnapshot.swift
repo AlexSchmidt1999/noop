@@ -33,6 +33,7 @@ struct TrainingDisplay: Codable, Hashable, Identifiable {
     var confirmationUntil: Date?
     var confirmationToken: String?
     var error: String?
+    var sport: String?
     func isConfirming(at now: Date = Date()) -> Bool { confirmationUntil.map { now < $0 } ?? false }
 }
 

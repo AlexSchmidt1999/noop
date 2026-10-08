@@ -1,6 +1,16 @@
 import XCTest
 
 final class TrainingSnapshotTests: XCTestCase {
+    func testWorkoutIconKeepsRawSportAndReadsOlderSnapshots() throws {
+        let old = Data(#"{"id":"run","kind":"workout","title":"Laufen","clockStart":0}"#.utf8)
+        var display = try JSONDecoder().decode(TrainingDisplay.self, from: old)
+        XCTAssertNil(display.sport)
+        display.sport = "Running"
+        let restored = try JSONDecoder().decode(TrainingDisplay.self, from: JSONEncoder().encode(display))
+        XCTAssertEqual(restored.sport, "Running")
+        XCTAssertEqual(restored.title, "Laufen")
+    }
+
     func testEndConfirmationIsBoundToTheSessionTokenAndThirtySeconds() {
         let now = Date(timeIntervalSince1970: 1_000)
         let confirmation = TrainingEndConfirmation(sessionID: "first", now: now)

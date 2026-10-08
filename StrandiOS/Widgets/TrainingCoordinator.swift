@@ -235,15 +235,15 @@ final class TrainingCoordinator: ObservableObject {
         "configure": String(localized: "Configure training favorites in NOOP"),
         "unavailable": String(localized: "Open NOOP to configure training")
     ] }
-    private func display(id: String, kind: String, title: String, start: Date, pausedAt: Date?, pausedDuration: TimeInterval) -> TrainingDisplay {
+    private func display(id: String, kind: String, title: String, start: Date, pausedAt: Date?, pausedDuration: TimeInterval, sport: String? = nil) -> TrainingDisplay {
         TrainingDisplay(id: id, kind: kind, title: title, clockStart: start.addingTimeInterval(pausedDuration), pausedAt: pausedAt,
                         pulseDeadline: guards[id]?.checkpoint.deadline.map { Date(timeIntervalSince1970: Double($0)) },
-                        confirmationUntil: confirmations[id]?.until, confirmationToken: confirmations[id]?.token, error: errors[id])
+                        confirmationUntil: confirmations[id]?.until, confirmationToken: confirmations[id]?.token, error: errors[id], sport: sport)
     }
     func publish(alert: Bool = false) {
         var sessions: [TrainingDisplay] = []
         if let w = model.activeWorkout { sessions.append(display(id: w.sessionID, kind: "workout", title: Self.sportTitle(w.sport),
-                                                               start: w.start, pausedAt: w.pausedAt, pausedDuration: w.pausedDuration)) }
+                                                               start: w.start, pausedAt: w.pausedAt, pausedDuration: w.pausedDuration, sport: w.sport)) }
         if let e = lift.engine, !e.isFinished {
             sessions.append(display(id: lift.sessionID, kind: "lift", title: lift.programName ?? String(localized: "Strength training"),
                                     start: Date(timeIntervalSince1970: Double(e.startTs)), pausedAt: e.pausedAt.map { Date(timeIntervalSince1970: Double($0)) },

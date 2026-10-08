@@ -8,6 +8,7 @@ Changes are kept in separate commits and stacked fork PRs.
 
 - Three favorites in Settings can select a sport or an existing Lift Log program.
   Defaults are strength training, running and an unassigned third slot. Names are editable.
+  On iPhone, open More → Settings → Training favorites (also reachable through Today's settings button).
 - The Training widget starts favorites; the running session offers Pause, Resume and End.
   The Lock Screen widget selects a favorite in its configuration. Normal workouts have
   a new Live Activity; Lift Log reuses its existing one.
@@ -72,6 +73,8 @@ the confirmation accessibility hint when the accessory cannot fit the full sente
 Workout and Lift activities share the same controls and native date-driven clocks. Lift keeps
 exercise, phase, repetitions/weight, next set and heart rate in a compact layout; confirmation
 prioritizes the prompt and saved-set warning. Existing update throttles are unchanged.
+Workout activities use the app's existing workout-type icon component, including its custom glyphs.
+The raw sport travels separately from the localized title; older snapshots remain readable.
 
 Build 437 was checked with rendered SwiftUI layouts for idle, active, paused and confirmation
 states, including long German exercise names, standard iOS font sizes and small widget dimensions.

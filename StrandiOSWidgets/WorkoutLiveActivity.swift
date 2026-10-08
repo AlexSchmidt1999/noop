@@ -12,7 +12,12 @@ struct WorkoutLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.state.training.title, systemImage: context.state.training.pausedAt == nil ? "stopwatch.fill" : "pause.fill")
+                    Label {
+                        Text(context.state.training.title)
+                    } icon: {
+                        WorkoutTypeIcon(workoutType: context.state.training.sport ?? KnownWorkoutType.other.rawValue,
+                                        size: NoopMetrics.space4, color: StrandPalette.accent)
+                    }
                         .font(StrandFont.caption.weight(.semibold)).lineLimit(1).foregroundStyle(StrandPalette.accent)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -22,8 +27,8 @@ struct WorkoutLiveActivity: Widget {
                     TrainingControls(training: context.state.training, labels: context.state.labels)
                 }
             } compactLeading: {
-                Image(systemName: context.state.training.pausedAt == nil ? "stopwatch.fill" : "pause.fill")
-                    .foregroundStyle(StrandPalette.accent)
+                WorkoutTypeIcon(workoutType: context.state.training.sport ?? KnownWorkoutType.other.rawValue,
+                                size: NoopMetrics.space4, color: StrandPalette.accent)
             } compactTrailing: {
                 Text(verbatim: "0:00:00").font(StrandFont.captionNumber).hidden()
                     .overlay(alignment: .trailing) {
@@ -31,7 +36,8 @@ struct WorkoutLiveActivity: Widget {
                             .multilineTextAlignment(.trailing).lineLimit(1).minimumScaleFactor(0.8)
                     }
             } minimal: {
-                Image(systemName: context.state.training.pausedAt == nil ? "stopwatch.fill" : "pause.fill").foregroundStyle(StrandPalette.accent)
+                WorkoutTypeIcon(workoutType: context.state.training.sport ?? KnownWorkoutType.other.rawValue,
+                                size: NoopMetrics.space4, color: StrandPalette.accent)
             }
         }
     }
@@ -45,9 +51,8 @@ struct WorkoutActivityView: View {
         return VStack(alignment: .leading, spacing: NoopMetrics.space3) {
             HStack(spacing: NoopMetrics.space3) {
                 if !focused {
-                    Image(systemName: training.pausedAt == nil ? "stopwatch.fill" : "pause.fill")
-                        .font(StrandFont.title2)
-                        .foregroundStyle(StrandPalette.accent)
+                    WorkoutTypeIcon(workoutType: training.sport ?? KnownWorkoutType.other.rawValue,
+                                    size: NoopMetrics.space6, color: StrandPalette.accent)
                         .frame(width: NoopButtonMetrics.minHitTarget, height: NoopButtonMetrics.minHitTarget)
                         .background(StrandPalette.surfaceRaised, in: RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius))
                         .accessibilityHidden(true)
