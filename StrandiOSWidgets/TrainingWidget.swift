@@ -122,14 +122,16 @@ struct TrainingWidgetView: View {
                     Group {
                         if compact {
                             favoriteTitle(favorite, configured: configured)
+                                .lineLimit(2)
                         } else {
-                            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                            VStack(spacing: NoopMetrics.space2) {
                                 favoriteIcon(favorite)
                                 favoriteTitle(favorite, configured: configured)
+                                    .lineLimit(2, reservesSpace: true)
                             }
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: compact ? nil : .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, maxHeight: compact ? nil : .infinity)
                     .padding(NoopMetrics.space2)
                     .frame(minHeight: NoopButtonMetrics.minHitTarget)
                     .background(renderingMode == .fullColor ? StrandPalette.surfaceRaised : StrandPalette.hairlineStrong,
@@ -147,15 +149,18 @@ struct TrainingWidgetView: View {
         Group {
             if configured { Text(favorite.name) } else { Text("Configure") }
         }
-        .font(StrandFont.caption.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
+        .font(StrandFont.caption.weight(.semibold)).minimumScaleFactor(0.8)
+        .multilineTextAlignment(.center)
         .foregroundStyle(configured ? textColor : StrandPalette.textTertiary)
     }
     @ViewBuilder private func favoriteIcon(_ favorite: TrainingFavorite) -> some View {
         if let sport = favorite.sport {
-            WorkoutTypeIcon(workoutType: sport, size: NoopMetrics.space5, color: iconColor)
+            WorkoutTypeIcon(workoutType: sport, size: NoopMetrics.space6, color: iconColor)
         } else {
             Image(systemName: favorite.programID == nil ? "plus" : "dumbbell.fill")
+                .resizable().scaledToFit()
                 .font(StrandFont.bodyNumber)
+                .frame(width: NoopMetrics.space6, height: NoopMetrics.space6)
                 .foregroundStyle(favorite.programID == nil ? StrandPalette.textTertiary : iconColor)
         }
     }

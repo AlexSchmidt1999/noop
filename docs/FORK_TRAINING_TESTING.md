@@ -64,8 +64,9 @@ Build/test evidence and actual device results should accompany each later upstre
 
 ## Widget and Live Activity presentation
 
-The Training widget uses three equal favorite tiles when idle and compact favorite buttons
-below the elapsed time and session controls while training. During confirmation or a save
+The Training widget uses three equal favorite tiles with centered icons and two-line labels
+when idle, and compact favorite buttons below the elapsed time and session controls while
+training. During confirmation or a save
 error, that action gets the available space. Lock Screen controls use distinct pause/resume
 and stop symbols with complete VoiceOver labels; the Lift completed-set warning remains in
 the confirmation accessibility hint when the accessory cannot fit the full sentence.
@@ -75,6 +76,7 @@ exercise, phase, repetitions/weight, next set and heart rate in a compact layout
 prioritizes the prompt and saved-set warning. Existing update throttles are unchanged.
 Workout activities use the app's existing workout-type icon component, including its custom glyphs.
 The raw sport travels separately from the localized title; older snapshots remain readable.
+System workout glyphs fit inside the component's existing square size, preserving their proportions.
 
 Build 437 was checked with rendered SwiftUI layouts for idle, active, paused and confirmation
 states, including long German exercise names, standard iOS font sizes and small widget dimensions.
