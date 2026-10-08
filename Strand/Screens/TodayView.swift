@@ -3213,7 +3213,7 @@ struct TodayView: View {
             // asks which SOURCE won this day, not which catalog entry to open. See `HeroRingMetric`.
             heroRingColumn(section: .rest, domain: .rest, provenanceKey: "sleep_performance",
                            detailRoute: .metric(HeroRingMetric.rest),
-                           caption: restIsPendingSync ? "Pending sync" : nil,
+                           caption: "Pending sync", captionVisible: restIsPendingSync,
                            captionWidth: ring) { restRing(diameter: ring) }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -3268,16 +3268,10 @@ struct TodayView: View {
     /// intrinsically diameter×diameter, so the column just centres it and stretches to an equal share
     /// of the row width.
     @ViewBuilder
-    /// `caption` is an optional one-line note under the domain label — currently Rest's "Pending sync".
-    ///
-    /// It lives HERE, under the label, rather than over the ring, for two reasons. It cannot cover the
-    /// score, which is what made the old overlay hide a number the user had every right to see. And it is
-    /// laid out at the COLUMN's width rather than the ring's, so it has room to render: the overlay was
-    /// measured against the circle and ellipsised its own explanation mid-word while spilling past the
-    /// ring's edge. Mirrors Android's `HeroRingColumn(caption:)`.
     private func heroRingColumn<RingBody: View>(
         section: ScoreSection, domain: DomainTheme, provenanceKey: String? = nil,
-        onOpenBreakdown: (() -> Void)? = nil, detailRoute: TabRoute? = nil, caption: String? = nil,
+        onOpenBreakdown: (() -> Void)? = nil, detailRoute: TabRoute? = nil,
+        caption: LocalizedStringKey? = nil, captionVisible: Bool = true,
         captionWidth: CGFloat = 98,
         @ViewBuilder ring: () -> RingBody
     ) -> some View {
@@ -3368,10 +3362,7 @@ struct TodayView: View {
                         .accessibilityLabel("Source: \(label)")
                 }
             }
-            // LAST in the column, below the provenance badge rather than above it. The badges sit at the
-            // same height across the three columns and a caption on one of them must not push that
-            // column's badge a line lower than its neighbours'. The row is top-aligned and self-sizing
-            // (#762), so a caption grows the row and leaves every ring where it was.
+            // Reserve the caption's natural height so brief pending-sync changes cannot move the cards below.
             if let caption {
                 // Bounded to the RING's width, not left to size itself. Unlike Android, whose three hero
                 // columns are laid out at a fixed `col` width, these columns take the width of what is in
@@ -3385,6 +3376,8 @@ struct TodayView: View {
                     .minimumScaleFactor(0.7)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: captionWidth)
+                    .opacity(captionVisible ? 1 : 0)
+                    .accessibilityHidden(!captionVisible)
             }
         }
     }

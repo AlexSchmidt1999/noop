@@ -104,6 +104,20 @@ passed. Local widget layout renders remain within the previous size limits. On i
 a long sync with Liquid Today enabled and disabled, while scrolling and switching tabs. These
 checks do not establish that the owner's intermittent hitch has disappeared on hardware.
 
+## Rest pending-sync layout follow-up (build 442)
+
+Classic Today's Rest hero reserves the localized pending-sync caption's natural height.
+Sync transitions change only its visibility, so a brief pending state cannot insert or
+remove a line below the score rings. An invisible caption is also hidden from VoiceOver.
+The score, source badge and pending-sync conditions are unchanged; the row still sizes
+itself to its content instead of imposing a fixed height.
+
+The macOS app and 21 existing Rest freshness, pending-sync diagnostic and ring-sizing
+tests passed. The iOS Release app, widgets and watch targets compiled; translation,
+doc-comment and source/binary policy checks passed. These checks do not reproduce the
+reported brief transition on an iPhone. Repeat a history sync on classic Today and verify
+that the cards below the rings keep their position as the pending caption changes.
+
 ## Configure link follow-up (build 440)
 
 Unassigned favorite tiles and empty training widgets use a native link to the existing
