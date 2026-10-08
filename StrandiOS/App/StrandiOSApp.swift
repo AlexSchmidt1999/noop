@@ -311,6 +311,8 @@ struct StrandiOSApp: App {
                 .onOpenURL { url in
                     if url.host == "import-health" {
                         model.handleHealthImportURL(url)
+                    } else if url == TrainingFavorite.configurationURL {
+                        router.openTrainingFavorites()
                     }
                 }
                 .alert("Import Apple Health data?", isPresented: healthImportAlertPresented) {

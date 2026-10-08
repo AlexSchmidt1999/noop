@@ -1,6 +1,21 @@
 import XCTest
+@testable import Strand
 
 final class TrainingSnapshotTests: XCTestCase {
+    @MainActor
+    func testFavoriteConfigurationWaitsForLaunchGatesAndIsConsumedOnce() {
+        let router = NavRouter()
+        router.openTrainingFavorites()
+        XCTAssertFalse(router.consumeTrainingFavoritesRequest(isReady: false))
+        XCTAssertEqual(router.requestedDestination, .trainingFavorites)
+        XCTAssertTrue(router.consumeTrainingFavoritesRequest(isReady: true))
+        XCTAssertNil(router.requestedDestination)
+        XCTAssertFalse(router.consumeTrainingFavoritesRequest(isReady: true))
+        router.openDevices()
+        XCTAssertFalse(router.consumeTrainingFavoritesRequest(isReady: true))
+        XCTAssertEqual(router.requestedDestination, .devices)
+    }
+
     func testWorkoutIconKeepsRawSportAndReadsOlderSnapshots() throws {
         let old = Data(#"{"id":"run","kind":"workout","title":"Laufen","clockStart":0}"#.utf8)
         var display = try JSONDecoder().decode(TrainingDisplay.self, from: old)

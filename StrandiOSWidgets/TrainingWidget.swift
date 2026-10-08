@@ -69,7 +69,7 @@ struct TrainingWidgetView: View {
                     }
                 }
             } else if entry.snapshot.favorites.isEmpty {
-                Text("Open NOOP to configure training").font(StrandFont.footnote)
+                configurationLink
             } else {
                 VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                     Text("Training").font(StrandFont.headline)
@@ -94,17 +94,31 @@ struct TrainingWidgetView: View {
                                  compact: training.isConfirming(), iconsOnly: !training.isConfirming())
             }
         } else if let favorite = selectedFavorite {
-            Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
-                HStack(spacing: NoopMetrics.space2) {
-                    favoriteIcon(favorite)
-                    Text(favorite.name).font(StrandFont.caption.weight(.semibold)).lineLimit(2)
-                    Spacer(minLength: 0)
-                    Image(systemName: "play.circle.fill").font(StrandFont.title2)
+            if favorite.sport != nil || favorite.programID != nil {
+                Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
+                    HStack(spacing: NoopMetrics.space2) {
+                        favoriteIcon(favorite)
+                        Text(favorite.name).font(StrandFont.caption.weight(.semibold)).lineLimit(2)
+                        Spacer(minLength: 0)
+                        Image(systemName: "play.circle.fill").font(StrandFont.title2)
+                    }
                 }
+                .buttonStyle(.plain)
+            } else {
+                Link(destination: TrainingFavorite.configurationURL) {
+                    HStack(spacing: NoopMetrics.space2) {
+                        favoriteIcon(favorite)
+                        Text("Configure").font(StrandFont.caption.weight(.semibold)).lineLimit(2)
+                    }
+                }
+                .accessibilityLabel(Text("Configure training favorites in NOOP"))
             }
-            .buttonStyle(.plain)
-            .disabled(favorite.sport == nil && favorite.programID == nil)
         } else {
+            configurationLink
+        }
+    }
+    private var configurationLink: some View {
+        Link(destination: TrainingFavorite.configurationURL) {
             Text("Open NOOP to configure training").font(StrandFont.footnote)
         }
     }
@@ -118,32 +132,40 @@ struct TrainingWidgetView: View {
         HStack(spacing: NoopMetrics.space2) {
             ForEach(entry.snapshot.favorites) { favorite in
                 let configured = favorite.sport != nil || favorite.programID != nil
-                Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
-                    Group {
-                        if compact {
-                            favoriteTitle(favorite, configured: configured)
-                                .lineLimit(2)
-                        } else {
-                            VStack(spacing: NoopMetrics.space2) {
-                                favoriteIcon(favorite)
-                                favoriteTitle(favorite, configured: configured)
-                                    .lineLimit(2, reservesSpace: true)
-                            }
-                        }
+                if configured {
+                    Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
+                        favoriteTile(favorite, configured: true, compact: compact)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: compact ? nil : .infinity)
-                    .padding(NoopMetrics.space2)
-                    .frame(minHeight: NoopButtonMetrics.minHitTarget)
-                    .background(renderingMode == .fullColor ? StrandPalette.surfaceRaised : StrandPalette.hairlineStrong,
-                                in: RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous)
-                        .strokeBorder(StrandPalette.hairline, lineWidth: NoopMetrics.hairlineWidth))
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(favorite.name)
+                } else {
+                    Link(destination: TrainingFavorite.configurationURL) {
+                        favoriteTile(favorite, configured: false, compact: compact)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Configure training favorites in NOOP"))
                 }
-                .buttonStyle(.plain)
-                .disabled(!configured)
-                .accessibilityLabel(favorite.name)
             }
         }
+    }
+    private func favoriteTile(_ favorite: TrainingFavorite, configured: Bool, compact: Bool) -> some View {
+        Group {
+            if compact {
+                favoriteTitle(favorite, configured: configured).lineLimit(2)
+            } else {
+                VStack(spacing: NoopMetrics.space2) {
+                    favoriteIcon(favorite)
+                    favoriteTitle(favorite, configured: configured).lineLimit(2, reservesSpace: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: compact ? nil : .infinity)
+        .padding(NoopMetrics.space2)
+        .frame(minHeight: NoopButtonMetrics.minHitTarget)
+        .background(renderingMode == .fullColor ? StrandPalette.surfaceRaised : StrandPalette.hairlineStrong,
+                    in: RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous)
+            .strokeBorder(StrandPalette.hairline, lineWidth: NoopMetrics.hairlineWidth))
     }
     @ViewBuilder private func favoriteTitle(_ favorite: TrainingFavorite, configured: Bool) -> some View {
         Group {

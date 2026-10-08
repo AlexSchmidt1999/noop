@@ -9,6 +9,8 @@ Changes are kept in separate commits and stacked fork PRs.
 - Three favorites in Settings can select a sport or an existing Lift Log program.
   Defaults are strength training, running and an unassigned third slot. Names are editable.
   On iPhone, open More → Settings → Training favorites (also reachable through Today's settings button).
+  The widget's Configure tile opens this same editor directly as a More-tab submenu, including
+  after a cold launch. Mandatory onboarding/terms and automatic launch sheets finish first.
 - The Training widget starts favorites; the running session offers Pause, Resume and End.
   The Lock Screen widget selects a favorite in its configuration. Normal workouts have
   a new Live Activity; Lift Log reuses its existing one.
@@ -47,6 +49,8 @@ additional background mode is introduced.
    local signing workflow; retain the bundle ID so existing data stays available.
 2. Configure all three favorites, including a Lift Log program. Enable reminders and add
    the Training widget and an accessory Lock Screen widget.
+   Tap an unassigned slot's Configure link with NOOP closed and already open; both must open
+   Training favorites directly. Configured slots must still start their assigned training.
 3. Start each favorite from the widget with NOOP closed. Check the training/Live Activity
    and live heart rate; sensorless recording must also remain possible.
 4. With a WHOOP session receiving pulse, lock the phone and remove the strap. Verify the
@@ -99,3 +103,12 @@ widget and watch targets compiled; translation, doc-comment and source/binary se
 passed. Local widget layout renders remain within the previous size limits. On iPhone, repeat
 a long sync with Liquid Today enabled and disabled, while scrolling and switching tabs. These
 checks do not establish that the owner's intermittent hitch has disappeared on hardware.
+
+## Configure link follow-up (build 440)
+
+Unassigned favorite tiles and empty training widgets use a native link to the existing
+Training favorites editor. Configured slots retain their Start intents. The request waits
+for launch gates, opens a single More-tab submenu, and leaves an active training session intact.
+The macOS app and ten targeted snapshot/navigation tests passed; the iOS Release app,
+widgets and watch targets compiled. Translation, source hygiene and source/binary policy
+checks passed. Cold/warm widget taps and the visible editor still require iPhone verification.

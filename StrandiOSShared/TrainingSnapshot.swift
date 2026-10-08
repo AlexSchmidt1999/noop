@@ -11,6 +11,7 @@ struct TrainingFavorite: Codable, Equatable, Identifiable {
         .init(id: 2, name: "")
     ]
     static let storageKey = "noop.trainingFavorites"
+    static let configurationURL = URL(string: "noop://training-favorites")!
     static func load(from defaults: UserDefaults = .standard) -> [Self] {
         guard let data = defaults.data(forKey: storageKey),
               let values = try? JSONDecoder().decode([Self].self, from: data),
