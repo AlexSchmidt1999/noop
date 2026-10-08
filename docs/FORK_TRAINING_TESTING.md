@@ -60,3 +60,23 @@ additional background mode is introduced.
    and any visible hitch. Synthetic Mac traces do not establish iPhone frame smoothness.
 
 Build/test evidence and actual device results should accompany each later upstream PR.
+
+## Widget and Live Activity presentation
+
+The Training widget uses three equal favorite tiles when idle and compact favorite buttons
+below the elapsed time and session controls while training. During confirmation or a save
+error, that action gets the available space. Lock Screen controls use distinct pause/resume
+and stop symbols with complete VoiceOver labels; the Lift completed-set warning remains in
+the confirmation accessibility hint when the accessory cannot fit the full sentence.
+
+Workout and Lift activities share the same controls and native date-driven clocks. Lift keeps
+exercise, phase, repetitions/weight, next set and heart rate in a compact layout; confirmation
+prioritizes the prompt and saved-set warning. Existing update throttles are unchanged.
+
+Build 437 was checked with rendered SwiftUI layouts for idle, active, paused and confirmation
+states, including long German exercise names, standard iOS font sizes and small widget dimensions.
+The rendered Live Activity states passed a 160-point height check. These local Mac layout renders
+do not reproduce iOS vibrancy or system presentation; test light/dark, tinted widgets,
+Always-On contrast and larger text on the phone. Verify both cancel and confirmed end in the
+new layout, including during a Lift rest. The widget gallery is now confirmed visible by the
+user on the phone.

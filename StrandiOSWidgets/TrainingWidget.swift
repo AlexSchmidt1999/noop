@@ -8,9 +8,18 @@ struct TrainingEntry: TimelineEntry {
     var favorite: Int
 }
 struct TrainingWidgetProvider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> TrainingEntry { .init(date: .now, snapshot: .unavailable, favorite: 0) }
+    private var preview: TrainingSnapshot {
+        var favorites = TrainingFavorite.defaults
+        favorites[0].name = String(localized: "Strength training")
+        favorites[1].name = String(localized: "Running workout")
+        favorites[2].name = String(localized: "Configure")
+        return .init(favorites: favorites, sessions: [], labels: [:])
+    }
+    func placeholder(in context: Context) -> TrainingEntry { .init(date: .now, snapshot: preview, favorite: 0) }
     func snapshot(for configuration: TrainingWidgetConfiguration, in context: Context) async -> TrainingEntry {
-        .init(date: .now, snapshot: .load(), favorite: configuration.favorite.rawValue)
+        let saved = TrainingSnapshot.load()
+        return .init(date: .now, snapshot: context.isPreview && saved.favorites.isEmpty ? preview : saved,
+                     favorite: configuration.favorite.rawValue)
     }
     func timeline(for configuration: TrainingWidgetConfiguration, in context: Context) async -> Timeline<TrainingEntry> {
         let entry = await snapshot(for: configuration, in: context)
@@ -30,45 +39,127 @@ struct TrainingWidget: Widget {
         .supportedFamilies([.systemMedium, .accessoryRectangular])
     }
 }
-private struct TrainingWidgetView: View {
+struct TrainingWidgetView: View {
     let entry: TrainingEntry
     @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetRenderingMode) private var renderingMode
+    private var textColor: Color { renderingMode == .fullColor ? StrandPalette.textPrimary : StrandPalette.onDarkPrimary }
+    private var iconColor: Color { renderingMode == .fullColor ? StrandPalette.accent : StrandPalette.onDarkPrimary }
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.rowSpacing) {
-            if family == .systemMedium {
-                HStack(spacing: NoopMetrics.rowSpacing) {
-                    ForEach(entry.snapshot.favorites) { favorite in
-                        Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
-                            Label(favorite.name, systemImage: favorite.programID == nil ? "play.fill" : "dumbbell.fill")
-                                .lineLimit(1)
+        Group {
+            if family == .accessoryRectangular {
+                accessory
+            } else if let training = selectedSession {
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                    if training.isConfirming() || training.error != nil {
+                        Text(training.title).font(StrandFont.caption).foregroundStyle(StrandPalette.textSecondary).lineLimit(1)
+                        TrainingControls(training: training, labels: entry.snapshot.labels)
+                    } else {
+                        HStack(spacing: NoopMetrics.space3) {
+                            VStack(alignment: .leading, spacing: NoopMetrics.spaceHalf) {
+                                Text(training.title).font(StrandFont.caption.weight(.semibold)).lineLimit(1)
+                                TrainingClock(training: training).font(StrandFont.title2).multilineTextAlignment(.leading)
+                                status(training)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            TrainingControls(training: training, labels: entry.snapshot.labels, iconsOnly: true)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
-                        .disabled(favorite.sport == nil && favorite.programID == nil)
+                        favorites(compact: true)
                     }
                 }
-            }
-            // A widget addresses one session. Each simultaneous session retains its own Live Activity.
-            if let training = selectedSession {
-                if family != .accessoryRectangular || !training.isConfirming() {
-                    HStack {
-                        Text(training.title).lineLimit(1)
-                        Spacer(minLength: NoopMetrics.space1)
-                        TrainingClock(training: training)
-                    }
-                    .font(StrandFont.caption)
-                }
-                TrainingControls(training: training, labels: entry.snapshot.labels)
-            } else if family == .accessoryRectangular, let favorite = selectedFavorite {
-                Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
-                    Label(favorite.name, systemImage: "play.fill").lineLimit(2)
-                }
-                .disabled(favorite.sport == nil && favorite.programID == nil)
             } else if entry.snapshot.favorites.isEmpty {
                 Text("Open NOOP to configure training").font(StrandFont.footnote)
+            } else {
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                    Text("Training").font(StrandFont.headline)
+                    favorites(compact: false)
+                }
             }
         }
-        .foregroundStyle(StrandPalette.textPrimary)
+        .foregroundStyle(textColor)
         .tint(StrandPalette.accent)
     }
+    @ViewBuilder private var accessory: some View {
+        if let training = selectedSession {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                if !training.isConfirming() && training.error == nil {
+                    HStack(spacing: NoopMetrics.space1) {
+                        Text(training.title).lineLimit(1)
+                        TrainingClock(training: training).multilineTextAlignment(.trailing)
+                    }
+                    .font(StrandFont.caption.weight(.semibold))
+                }
+                TrainingControls(training: training, labels: entry.snapshot.labels,
+                                 compact: training.isConfirming(), iconsOnly: !training.isConfirming())
+            }
+        } else if let favorite = selectedFavorite {
+            Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
+                HStack(spacing: NoopMetrics.space2) {
+                    favoriteIcon(favorite)
+                    Text(favorite.name).font(StrandFont.caption.weight(.semibold)).lineLimit(2)
+                    Spacer(minLength: 0)
+                    Image(systemName: "play.circle.fill").font(StrandFont.title2)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(favorite.sport == nil && favorite.programID == nil)
+        } else {
+            Text("Open NOOP to configure training").font(StrandFont.footnote)
+        }
+    }
+    private func status(_ training: TrainingDisplay) -> some View {
+        Label(entry.snapshot.labels[training.pausedAt == nil ? "running" : "paused"] ?? "",
+              systemImage: training.pausedAt == nil ? "record.circle" : "pause.circle")
+            .font(StrandFont.footnote)
+            .foregroundStyle(training.pausedAt == nil ? StrandPalette.accent : StrandPalette.metricAmber)
+    }
+    private func favorites(compact: Bool) -> some View {
+        HStack(spacing: NoopMetrics.space2) {
+            ForEach(entry.snapshot.favorites) { favorite in
+                let configured = favorite.sport != nil || favorite.programID != nil
+                Button(intent: TrainingActionIntent(.start, favorite: favorite.id)) {
+                    Group {
+                        if compact {
+                            favoriteTitle(favorite, configured: configured)
+                        } else {
+                            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                                favoriteIcon(favorite)
+                                favoriteTitle(favorite, configured: configured)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: compact ? nil : .infinity, alignment: .leading)
+                    .padding(NoopMetrics.space2)
+                    .frame(minHeight: NoopButtonMetrics.minHitTarget)
+                    .background(renderingMode == .fullColor ? StrandPalette.surfaceRaised : StrandPalette.hairlineStrong,
+                                in: RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopButtonMetrics.cornerRadius, style: .continuous)
+                        .strokeBorder(StrandPalette.hairline, lineWidth: NoopMetrics.hairlineWidth))
+                }
+                .buttonStyle(.plain)
+                .disabled(!configured)
+                .accessibilityLabel(favorite.name)
+            }
+        }
+    }
+    @ViewBuilder private func favoriteTitle(_ favorite: TrainingFavorite, configured: Bool) -> some View {
+        Group {
+            if configured { Text(favorite.name) } else { Text("Configure") }
+        }
+        .font(StrandFont.caption.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
+        .foregroundStyle(configured ? textColor : StrandPalette.textTertiary)
+    }
+    @ViewBuilder private func favoriteIcon(_ favorite: TrainingFavorite) -> some View {
+        if let sport = favorite.sport {
+            WorkoutTypeIcon(workoutType: sport, size: NoopMetrics.space5, color: iconColor)
+        } else {
+            Image(systemName: favorite.programID == nil ? "plus" : "dumbbell.fill")
+                .font(StrandFont.bodyNumber)
+                .foregroundStyle(favorite.programID == nil ? StrandPalette.textTertiary : iconColor)
+        }
+    }
+    // A widget addresses one session. Each simultaneous session retains its own Live Activity.
     private var selectedFavorite: TrainingFavorite? { entry.snapshot.favorites.first { $0.id == entry.favorite } }
     private var selectedSession: TrainingDisplay? {
         let kind = selectedFavorite?.programID == nil ? "workout" : "lift"

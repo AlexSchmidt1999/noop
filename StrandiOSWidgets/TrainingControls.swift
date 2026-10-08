@@ -1,53 +1,75 @@
 import SwiftUI
+import WidgetKit
 import StrandDesign
 
 struct TrainingControls: View {
     let training: TrainingDisplay
     let labels: [String: String]
-    private var completedOnly: String { label("completedOnly") }
+    var compact = false
+    var iconsOnly = false
+    @Environment(\.widgetRenderingMode) private var renderingMode
     private func label(_ key: String) -> String { labels[key] ?? "" }
+    private var textColor: Color { renderingMode == .fullColor ? StrandPalette.textPrimary : StrandPalette.onDarkPrimary }
     var body: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space1) {
             if let error = training.error {
-                Text(error).font(StrandFont.footnote).foregroundStyle(StrandPalette.metricAmber)
+                Text(error).font(StrandFont.footnote).foregroundStyle(StrandPalette.metricAmber).lineLimit(2)
             }
             if training.isConfirming(), let token = training.confirmationToken {
-                Text(label("confirm")).font(StrandFont.caption).foregroundStyle(StrandPalette.textPrimary)
-                if training.kind == "lift" {
-                    Text(completedOnly).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
+                Text(label("confirm")).font(StrandFont.caption.weight(.semibold)).foregroundStyle(textColor)
+                if training.kind == "lift" && !compact {
+                    let warning = label("completedOnly")
+                    Text(verbatim: warning).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
                 }
-                HStack(spacing: NoopMetrics.rowSpacing) {
-                    Button(intent: TrainingActionIntent(.confirmEnd, sessionID: training.id, token: token)) {
-                        Text(label("yes"))
-                    }
-                    Button(intent: TrainingActionIntent(.cancelEnd, sessionID: training.id)) {
-                        Text(label("cancel"))
-                    }
+                HStack(spacing: NoopMetrics.space2) {
+                    button(.confirmEnd, title: label("yes"), symbol: "checkmark", token: token, destructive: true)
+                    button(.cancelEnd, title: label("cancel"), symbol: "xmark")
                 }
             } else {
-                HStack(spacing: NoopMetrics.rowSpacing) {
-                    Button(intent: TrainingActionIntent(training.pausedAt == nil ? .pause : .resume, sessionID: training.id)) {
-                        Label(label(training.pausedAt == nil ? "pause" : "resume"), systemImage: training.pausedAt == nil ? "pause.fill" : "play.fill")
-                    }
-                    Button(intent: TrainingActionIntent(.requestEnd, sessionID: training.id)) {
-                        Label(label("end"), systemImage: "stop.fill")
-                    }
+                HStack(spacing: NoopMetrics.space2) {
+                    button(training.pausedAt == nil ? .pause : .resume,
+                           title: label(training.pausedAt == nil ? "pause" : "resume"),
+                           symbol: training.pausedAt == nil ? "pause.fill" : "play.fill", emphasized: true)
+                    button(.requestEnd, title: label("end"), symbol: "stop.fill")
                 }
             }
         }
         .font(StrandFont.caption)
         .lineLimit(1)
-        .minimumScaleFactor(0.7)
-        .tint(StrandPalette.accent)
+        .minimumScaleFactor(0.8)
+    }
+    private func button(_ action: TrainingAction, title: String, symbol: String, token: String = "",
+                        emphasized: Bool = false, destructive: Bool = false) -> some View {
+        let icon = destructive ? StrandPalette.statusCritical : emphasized ? StrandPalette.accent : StrandPalette.textPrimary
+        let fill = destructive ? StrandPalette.statusCritical.opacity(0.18) : emphasized ? StrandPalette.accentMuted : StrandPalette.surfaceRaised
+        return Button(intent: TrainingActionIntent(action, sessionID: training.id, token: token)) {
+            HStack(spacing: NoopMetrics.space1) {
+                if !compact || iconsOnly {
+                    Image(systemName: symbol)
+                        .foregroundStyle(renderingMode == .fullColor ? icon : StrandPalette.onDarkPrimary)
+                }
+                if !iconsOnly { Text(title) }
+            }
+                .font(StrandFont.caption.weight(.semibold))
+                .padding(.horizontal, NoopMetrics.space2)
+                .frame(minWidth: iconsOnly ? NoopButtonMetrics.minHitTarget : nil, maxWidth: .infinity,
+                       minHeight: compact ? NoopMetrics.compactMetadataMinHeight : NoopButtonMetrics.minHitTarget)
+                .foregroundStyle(textColor)
+                .background(renderingMode == .fullColor ? fill : StrandPalette.hairlineStrong, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityHint(action == .confirmEnd && training.kind == "lift" ? label("completedOnly") : "")
     }
 }
 
 struct TrainingClock: View {
     let training: TrainingDisplay
+    @Environment(\.widgetRenderingMode) private var renderingMode
     var body: some View {
         Text(timerInterval: training.clockStart...max(training.clockStart, training.pulseDeadline ?? training.clockStart.addingTimeInterval(7 * 86_400)),
              pauseTime: training.pausedAt, countsDown: false)
             .monospacedDigit()
-            .foregroundStyle(StrandPalette.textPrimary)
+            .foregroundStyle(renderingMode == .fullColor ? StrandPalette.textPrimary : StrandPalette.onDarkPrimary)
     }
 }
