@@ -232,8 +232,7 @@ final class TrainingCoordinator: ObservableObject {
         "yes": String(localized: "Yes, end training"), "cancel": String(localized: "Cancel"),
         "completedOnly": String(localized: "Only completed sets will be saved."),
         "paused": String(localized: "Paused"), "running": String(localized: "Training"),
-        "configure": String(localized: "Configure training favorites in NOOP"),
-        "unavailable": String(localized: "Open NOOP to configure training")
+        "configure": String(localized: "Configure training favorites in NOOP")
     ] }
     private func display(id: String, kind: String, title: String, start: Date, pausedAt: Date?, pausedDuration: TimeInterval, sport: String? = nil) -> TrainingDisplay {
         TrainingDisplay(id: id, kind: kind, title: title, clockStart: start.addingTimeInterval(pausedDuration), pausedAt: pausedAt,

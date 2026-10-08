@@ -27,11 +27,6 @@ struct StrandiOSApp: App {
     /// NOOP's live heart rate banner. Built in `init` and fed from there (`LiveActivityController.follow`), not from
     /// a view: a process iOS starts in the background need not build one.
     @State private var liveActivity: LiveActivityController
-    /// The Lift Log session's own Live Activity. Separate from the live-HR one above: while a gym
-    /// session is open this is the banner that matters (it carries the heart rate too), so the HR
-    /// activity is suppressed rather than stacked beside it. Built in `init`, where the strap log it
-    /// writes to exists.
-    @State private var liftActivity: LiftLiveActivityController
     @StateObject private var training: TrainingCoordinator
     /// The live gym session. Owned HERE, at the app root, rather than by the screen that shows it:
     /// swiping the workout sheet away must not stop the clock, silence the strap or drop the
@@ -116,7 +111,6 @@ struct StrandiOSApp: App {
         let liftActivity = LiftLiveActivityController(log: { [weak model] line in
             model?.live.append(log: AppModel.stamped(line))
         })
-        _liftActivity = State(initialValue: liftActivity)
         // Restore before the coordinator's first push or any scene exists.
         liftSession.resumeSaved()
         let training = TrainingCoordinator(model: model, lift: liftSession, liftActivity: liftActivity)
