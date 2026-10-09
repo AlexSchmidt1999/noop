@@ -27,7 +27,8 @@ final class TrainingCoordinator: ObservableObject {
     private var lastCheckpoint: [String: Int] = [:]
     private var workoutActivity: Activity<WorkoutActivityAttributes>?
     private var lastWorkoutState: WorkoutActivityAttributes.ContentState?
-    private var lastWidgetData: Data?
+    private var lastWidgetSnapshot: TrainingSnapshot?
+    private var workoutUpdate: Task<Void, Never>?
     var isShowingWorkout: Bool { workoutActivity?.activityState == .active || workoutActivity?.activityState == .stale }
     private var canStartFromIntent = false
     private var holdsRealtimeHR = false
@@ -43,9 +44,21 @@ final class TrainingCoordinator: ObservableObject {
         model.live.onReadableHeartRate = { [weak self] date in self?.receivedPulse(at: date) }
         TrainingIntentHandler.perform = { [weak self] action, id, favorite, token in
             guard let self else { throw CocoaError(.featureUnsupported) }
+            let started = ProcessInfo.processInfo.systemUptime
             self.canStartFromIntent = true
-            defer { self.canStartFromIntent = false }
-            try await self.perform(action, id: id, favorite: favorite, token: token)
+            defer {
+                self.canStartFromIntent = false
+                if TestCentre.active(.display) {
+                    let ms = (ProcessInfo.processInfo.systemUptime - started) * 1_000
+                    DisplayPerformanceMonitor.shared.emit?("trainingIntent action=\(action) handlerMs=\(String(format: "%.1f", ms))")
+                }
+            }
+            do { try await self.perform(action, id: id, favorite: favorite, token: token) }
+            catch {
+                await self.flushActivityUpdates()
+                throw error
+            }
+            await self.flushActivityUpdates()
         }
         model.$activeWorkout.dropFirst().debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.reconcile() }.store(in: &subscriptions)
@@ -148,7 +161,7 @@ final class TrainingCoordinator: ObservableObject {
     }
 
     func perform(_ action: String, id: String = "", favorite: Int = -1, token: String = "") async throws {
-        reconcile()
+        reconcile(publish: false)
         if action == "start" {
             guard UserDefaults.standard.bool(forKey: "noop.onboarded"),
                   UserDefaults.standard.string(forKey: "noop.acceptedTermsVersion") == Terms.currentVersion else { throw CocoaError(.userCancelled) }
@@ -200,6 +213,11 @@ final class TrainingCoordinator: ObservableObject {
 
     private func persistGuards() {
         if let data = try? JSONEncoder().encode(guards.mapValues(\.checkpoint)) { UserDefaults.standard.set(data, forKey: Self.pulseStateKey) }
+    }
+    private func flushActivityUpdates() async {
+        // User actions finish their ActivityKit update before the intent returns.
+        await workoutUpdate?.value
+        await liftActivity.pendingUpdate?.value
     }
     private func armTimer() {
         let deadlines = ids.filter { !isPaused($0) }.compactMap { guards[$0]?.deadline }.map(Double.init)
@@ -253,8 +271,8 @@ final class TrainingCoordinator: ObservableObject {
             favorites[i].name = favorites[i].sport.flatMap { Self.sportTitle($0) } ?? labels["configure"] ?? ""
         }
         let snapshot = TrainingSnapshot(favorites: favorites, sessions: sessions, labels: labels)
-        if let data = try? JSONEncoder().encode(snapshot), data != lastWidgetData {
-            snapshot.save(); lastWidgetData = data
+        if snapshot != lastWidgetSnapshot {
+            snapshot.save(); lastWidgetSnapshot = snapshot
             WidgetCenter.shared.reloadTimelines(ofKind: "NOOPTrainingWidget")
         }
         pushWorkout(sessions.first(where: { $0.kind == "workout" }))
@@ -273,21 +291,21 @@ final class TrainingCoordinator: ObservableObject {
         if let current = workoutActivity, [.ended, .dismissed].contains(current.activityState) { workoutActivity = nil }
         if let current = workoutActivity, let display, current.attributes.sessionID != display.id {
             workoutActivity = nil; lastWorkoutState = nil
-            Task { await current.end(nil, dismissalPolicy: .immediate) }
+            workoutUpdate = Task { await current.end(nil, dismissalPolicy: .immediate) }
         }
         if workoutActivity == nil { workoutActivity = Activity<WorkoutActivityAttributes>.activities.first { $0.attributes.sessionID == display?.id && ![.ended, .dismissed].contains($0.activityState) } }
         guard let display, UserDefaults.standard.object(forKey: "noop.workoutLiveActivity") as? Bool ?? true,
               ActivityAuthorizationInfo().areActivitiesEnabled else {
             let old = Activity<WorkoutActivityAttributes>.activities
             workoutActivity = nil; lastWorkoutState = nil
-            Task { for activity in old { await activity.end(nil, dismissalPolicy: .immediate) } }
+            if !old.isEmpty { workoutUpdate = Task { for activity in old { await activity.end(nil, dismissalPolicy: .immediate) } } }
             return
         }
         let state = WorkoutActivityAttributes.ContentState(training: display, labels: labels)
         guard state != lastWorkoutState else { return }
         let content = ActivityContent(state: state, staleDate: display.pulseDeadline)
         if let activity = workoutActivity {
-            Task { await activity.update(content) }
+            workoutUpdate = Task { await activity.update(content) }
         } else if UIApplication.shared.applicationState == .active || canStartFromIntent {
             do { workoutActivity = try Activity.request(attributes: .init(sessionID: display.id), content: content, pushType: nil) }
             catch { model.live.append(log: "Training: Live Activity could not start: \(error.localizedDescription)") }

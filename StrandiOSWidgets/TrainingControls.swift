@@ -17,6 +17,7 @@ struct TrainingControls: View {
             }
             if training.isConfirming(), let token = training.confirmationToken {
                 Text(label("confirm")).font(StrandFont.caption.weight(.semibold)).foregroundStyle(textColor)
+                    .invalidatableContent()
                 if training.kind == "lift" && !compact {
                     let warning = label("completedOnly")
                     Text(verbatim: warning).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
@@ -27,9 +28,11 @@ struct TrainingControls: View {
                 }
             } else {
                 HStack(spacing: NoopMetrics.space2) {
-                    button(training.pausedAt == nil ? .pause : .resume,
-                           title: label(training.pausedAt == nil ? "pause" : "resume"),
-                           symbol: training.pausedAt == nil ? "pause.fill" : "play.fill", emphasized: true)
+                    Toggle(isOn: training.pausedAt != nil,
+                           intent: TrainingActionIntent(training.pausedAt == nil ? .pause : .resume, sessionID: training.id)) {
+                        Text(label(training.pausedAt == nil ? "pause" : "resume"))
+                    }
+                    .toggleStyle(PauseStyle(controls: self))
                     button(.requestEnd, title: label("end"), symbol: "stop.fill")
                 }
             }
@@ -39,27 +42,42 @@ struct TrainingControls: View {
         .minimumScaleFactor(0.8)
     }
     private func button(_ action: TrainingAction, title: String, symbol: String, token: String = "",
-                        emphasized: Bool = false, destructive: Bool = false) -> some View {
-        let icon = destructive ? StrandPalette.statusCritical : emphasized ? StrandPalette.accent : StrandPalette.textPrimary
-        let fill = destructive ? StrandPalette.statusCritical.opacity(0.18) : emphasized ? StrandPalette.accentMuted : StrandPalette.surfaceRaised
-        return Button(intent: TrainingActionIntent(action, sessionID: training.id, token: token)) {
-            HStack(spacing: NoopMetrics.space1) {
-                if !compact || iconsOnly {
-                    Image(systemName: symbol)
-                        .foregroundStyle(renderingMode == .fullColor ? icon : StrandPalette.onDarkPrimary)
-                }
-                if !iconsOnly { Text(title) }
-            }
-                .font(StrandFont.caption.weight(.semibold))
-                .padding(.horizontal, NoopMetrics.space2)
-                .frame(minWidth: iconsOnly ? NoopButtonMetrics.minHitTarget : nil, maxWidth: .infinity,
-                       minHeight: compact ? NoopMetrics.compactMetadataMinHeight : NoopButtonMetrics.minHitTarget)
-                .foregroundStyle(textColor)
-                .background(renderingMode == .fullColor ? fill : StrandPalette.hairlineStrong, in: Capsule())
+                        destructive: Bool = false) -> some View {
+        Button(intent: TrainingActionIntent(action, sessionID: training.id, token: token)) {
+            buttonLabel(title: title, symbol: symbol, destructive: destructive)
         }
         .buttonStyle(.plain)
+        .invalidatableContent()
         .accessibilityLabel(title)
         .accessibilityHint(action == .confirmEnd && training.kind == "lift" ? label("completedOnly") : "")
+    }
+    private func buttonLabel(title: String, symbol: String, emphasized: Bool = false, destructive: Bool = false) -> some View {
+        let icon = destructive ? StrandPalette.statusCritical : emphasized ? StrandPalette.accent : StrandPalette.textPrimary
+        let fill = destructive ? StrandPalette.statusCritical.opacity(0.18) : emphasized ? StrandPalette.accentMuted : StrandPalette.surfaceRaised
+        return HStack(spacing: NoopMetrics.space1) {
+            if !compact || iconsOnly {
+                Image(systemName: symbol)
+                    .foregroundStyle(renderingMode == .fullColor ? icon : StrandPalette.onDarkPrimary)
+            }
+            if !iconsOnly { Text(title) }
+        }
+        .font(StrandFont.caption.weight(.semibold))
+        .padding(.horizontal, NoopMetrics.space2)
+        .frame(minWidth: iconsOnly ? NoopButtonMetrics.minHitTarget : nil, maxWidth: .infinity,
+               minHeight: compact ? NoopMetrics.compactMetadataMinHeight : NoopButtonMetrics.minHitTarget)
+        .foregroundStyle(textColor)
+        .background(renderingMode == .fullColor ? fill : StrandPalette.hairlineStrong, in: Capsule())
+    }
+    private struct PauseStyle: ToggleStyle {
+        let controls: TrainingControls
+        func makeBody(configuration: Configuration) -> some View {
+            let title = controls.label(configuration.isOn ? "resume" : "pause")
+            Button { configuration.isOn.toggle() } label: {
+                controls.buttonLabel(title: title, symbol: configuration.isOn ? "play.fill" : "pause.fill", emphasized: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+        }
     }
 }
 
@@ -71,5 +89,6 @@ struct TrainingClock: View {
              pauseTime: training.pausedAt, countsDown: false)
             .monospacedDigit()
             .foregroundStyle(renderingMode == .fullColor ? StrandPalette.textPrimary : StrandPalette.onDarkPrimary)
+            .invalidatableContent()
     }
 }

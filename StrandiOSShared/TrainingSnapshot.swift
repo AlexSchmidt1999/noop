@@ -38,7 +38,7 @@ struct TrainingDisplay: Codable, Hashable, Identifiable {
     func isConfirming(at now: Date = Date()) -> Bool { confirmationUntil.map { now < $0 } ?? false }
 }
 
-struct TrainingSnapshot: Codable {
+struct TrainingSnapshot: Codable, Equatable {
     var favorites: [TrainingFavorite]
     var sessions: [TrainingDisplay]
     var labels: [String: String]

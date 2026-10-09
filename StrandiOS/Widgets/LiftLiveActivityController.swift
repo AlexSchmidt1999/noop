@@ -30,6 +30,7 @@ final class LiftLiveActivityController {
     /// The state the banner is showing, so a heart-rate tick can push a copy of it without the app
     /// building a whole presentation again (`updateHeartRate`).
     private var lastState: LiftActivityAttributes.ContentState?
+    private(set) var pendingUpdate: Task<Void, Never>?
     /// Cached for the controller's lifetime — the same reasoning as `LiveActivityController`: this is
     /// consulted on every push and its value only changes via Settings.
     private let authInfo = ActivityAuthorizationInfo()
@@ -93,7 +94,7 @@ final class LiftLiveActivityController {
         // Its own switch (`UnitPrefs.liftLiveActivityEnabled`), so the everyday heart-rate banner can be off while
         // the gym banner stays; turning this one off also ends a banner already showing.
         guard UnitPrefs.liftLiveActivityEnabled(), let state else {
-            if activity != nil { Task { await end() } }
+            if activity != nil { pendingUpdate = Task { await end() } }
             return alert ? .noBanner : nil
         }
         if adopted != nil {
@@ -133,9 +134,9 @@ final class LiftLiveActivityController {
                     body: LocalizedStringResource(stringLiteral: state.detail.map { "\(state.status) — \($0)" }
                                                   ?? state.status),
                     sound: .named(Self.silentAlertSound))
-                Task { await activity.update(content, alertConfiguration: stepAlert) }
+                pendingUpdate = Task { await activity.update(content, alertConfiguration: stepAlert) }
             } else {
-                Task { await activity.update(content) }
+                pendingUpdate = Task { await activity.update(content) }
             }
             return alert ? (lightsScreen ? .askedIOS : .appOnScreen) : nil
         } else {
@@ -185,7 +186,7 @@ final class LiftLiveActivityController {
         lastState = next
         lastPush = Date()
         let content = ActivityContent(state: next, staleDate: Date().addingTimeInterval(Self.staleAfter))
-        Task { await activity.update(content) }
+        pendingUpdate = Task { await activity.update(content) }
     }
 
     func end() async {

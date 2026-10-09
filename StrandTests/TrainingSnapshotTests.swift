@@ -2,6 +2,31 @@ import XCTest
 @testable import Strand
 
 final class TrainingSnapshotTests: XCTestCase {
+    func testSnapshotEqualityIgnoresEncodingOrderButKeepsVisibleActionChanges() throws {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let training = TrainingDisplay(id: "run", kind: "workout", title: "Run", clockStart: now)
+        let snapshot = TrainingSnapshot(favorites: TrainingFavorite.defaults, sessions: [training],
+                                        labels: ["pause": "Pause", "resume": "Resume"])
+        var copy = try JSONDecoder().decode(TrainingSnapshot.self, from: JSONEncoder().encode(snapshot))
+        copy.labels = ["resume": "Resume", "pause": "Pause"]
+        XCTAssertEqual(snapshot, copy)
+        copy.sessions[0].pausedAt = now.addingTimeInterval(10)
+        XCTAssertNotEqual(snapshot, copy)
+        copy = snapshot
+        copy.sessions[0].confirmationToken = "new"
+        copy.sessions[0].confirmationUntil = now.addingTimeInterval(30)
+        XCTAssertNotEqual(snapshot, copy)
+        copy = snapshot
+        copy.sessions[0].error = "Save failed"
+        XCTAssertNotEqual(snapshot, copy)
+        copy = snapshot
+        copy.favorites[0].name = "New favorite"
+        XCTAssertNotEqual(snapshot, copy)
+        copy = snapshot
+        copy.labels["pause"] = "Pause training"
+        XCTAssertNotEqual(snapshot, copy)
+    }
+
     @MainActor
     func testFavoriteConfigurationWaitsForLaunchGatesAndIsConsumedOnce() {
         let router = NavRouter()

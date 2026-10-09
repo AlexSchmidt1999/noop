@@ -142,3 +142,31 @@ for launch gates, opens a single More-tab submenu, and leaves an active training
 The macOS app and ten targeted snapshot/navigation tests passed; the iOS Release app,
 widgets and watch targets compiled. Translation, source hygiene and source/binary policy
 checks passed. Cold/warm widget taps and the visible editor still require iPhone verification.
+
+## Training interaction follow-up (build 445)
+
+Pause/Resume uses WidgetKit's optimistic intent-backed Toggle, keeping the existing
+icons, localized labels and design tokens. End and confirmation controls and the
+elapsed clock mark their content as invalidatable while a new result is pending.
+The displayed state is reconciled with the actual app-owned session after the action.
+Explicit Pause and Resume remain idempotent; ending still requires the session-bound
+30-second confirmation and successful storage.
+
+The action no longer publishes an unchanged snapshot before applying the change.
+Snapshot equality compares values rather than encoded JSON order, preventing
+redundant timeline reloads. App intents await pending ActivityKit updates before
+returning. Existing pulse and heart-rate throttles remain in place.
+
+Display & Performance adds a local `trainingIntent` summary for each intent,
+containing only the action and handler duration. It excludes app-process wake time
+and the system's final redraw; it is not a tap-to-display measurement.
+Test Pause, Resume, End/Cancel and confirmed End in both the Home Screen widget
+and expanded Live Activity, with NOOP warm and after a background relaunch.
+
+The macOS build and 29 targeted snapshot, deadline, pause/rest, persistence and
+save-failure tests passed. The iOS Release app, widget and watch targets compiled.
+Twelve existing layout renders passed, with Live Activities below the 160-point
+limit. Translation, source hygiene and source/binary policy checks passed.
+The local timer test now resolves its expected text through localization, so it
+can validate the same rest transition on both English and German test hosts.
+Tap-to-display latency and system-rendered optimistic feedback need iPhone checks.
