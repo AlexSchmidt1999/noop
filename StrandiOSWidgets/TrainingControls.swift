@@ -17,7 +17,6 @@ struct TrainingControls: View {
             }
             if training.isConfirming(), let token = training.confirmationToken {
                 Text(label("confirm")).font(StrandFont.caption.weight(.semibold)).foregroundStyle(textColor)
-                    .invalidatableContent()
                 if training.kind == "lift" && !compact {
                     let warning = label("completedOnly")
                     Text(verbatim: warning).font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
@@ -47,7 +46,6 @@ struct TrainingControls: View {
             buttonLabel(title: title, symbol: symbol, destructive: destructive)
         }
         .buttonStyle(.plain)
-        .invalidatableContent()
         .accessibilityLabel(title)
         .accessibilityHint(action == .confirmEnd && training.kind == "lift" ? label("completedOnly") : "")
     }
@@ -89,6 +87,5 @@ struct TrainingClock: View {
              pauseTime: training.pausedAt, countsDown: false)
             .monospacedDigit()
             .foregroundStyle(renderingMode == .fullColor ? StrandPalette.textPrimary : StrandPalette.onDarkPrimary)
-            .invalidatableContent()
     }
 }

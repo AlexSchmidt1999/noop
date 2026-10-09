@@ -45,12 +45,13 @@ final class TrainingCoordinator: ObservableObject {
         TrainingIntentHandler.perform = { [weak self] action, id, favorite, token in
             guard let self else { throw CocoaError(.featureUnsupported) }
             let started = ProcessInfo.processInfo.systemUptime
+            let sessionMatched = self.ids.contains(id)
             self.canStartFromIntent = true
             defer {
                 self.canStartFromIntent = false
                 if TestCentre.active(.display) {
                     let ms = (ProcessInfo.processInfo.systemUptime - started) * 1_000
-                    DisplayPerformanceMonitor.shared.emit?("trainingIntent action=\(action) handlerMs=\(String(format: "%.1f", ms))")
+                    DisplayPerformanceMonitor.shared.emit?("trainingIntent action=\(action) handlerMs=\(String(format: "%.1f", ms)) sessionMatched=\(sessionMatched) confirming=\(self.confirmations[id] != nil) activeSessions=\(self.ids.count)")
                 }
             }
             do { try await self.perform(action, id: id, favorite: favorite, token: token) }
@@ -162,6 +163,7 @@ final class TrainingCoordinator: ObservableObject {
 
     func perform(_ action: String, id: String = "", favorite: Int = -1, token: String = "") async throws {
         reconcile(publish: false)
+        defer { reconcile(); persistGuards() }
         if action == "start" {
             guard UserDefaults.standard.bool(forKey: "noop.onboarded"),
                   UserDefaults.standard.string(forKey: "noop.acceptedTermsVersion") == Terms.currentVersion else { throw CocoaError(.userCancelled) }
@@ -201,14 +203,11 @@ final class TrainingCoordinator: ObservableObject {
                     cancelNotification(id)
                 } catch {
                     errors[id] = String(localized: "Training could not be saved")
-                    publish()
                     throw error
                 }
             default: throw CocoaError(.validationMissingMandatoryProperty)
             }
         }
-        reconcile()
-        persistGuards()
     }
 
     private func persistGuards() {

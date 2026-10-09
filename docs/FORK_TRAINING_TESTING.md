@@ -146,8 +146,7 @@ checks passed. Cold/warm widget taps and the visible editor still require iPhone
 ## Training interaction follow-up (build 445)
 
 Pause/Resume uses WidgetKit's optimistic intent-backed Toggle, keeping the existing
-icons, localized labels and design tokens. End and confirmation controls and the
-elapsed clock mark their content as invalidatable while a new result is pending.
+icons, localized labels and design tokens.
 The displayed state is reconciled with the actual app-owned session after the action.
 Explicit Pause and Resume remain idempotent; ending still requires the session-bound
 30-second confirmation and successful storage.
@@ -158,7 +157,8 @@ redundant timeline reloads. App intents await pending ActivityKit updates before
 returning. Existing pulse and heart-rate throttles remain in place.
 
 Display & Performance adds a local `trainingIntent` summary for each intent,
-containing only the action and handler duration. It excludes app-process wake time
+containing the action, handler duration, session-match/confirmation flags and
+active-session count, without IDs or health values. It excludes app-process wake time
 and the system's final redraw; it is not a tap-to-display measurement.
 Test Pause, Resume, End/Cancel and confirmed End in both the Home Screen widget
 and expanded Live Activity, with NOOP warm and after a background relaunch.
@@ -169,4 +169,25 @@ Twelve existing layout renders passed, with Live Activities below the 160-point
 limit. Translation, source hygiene and source/binary policy checks passed.
 The local timer test now resolves its expected text through localization, so it
 can validate the same rest transition on both English and German test hosts.
-Tap-to-display latency and system-rendered optimistic feedback need iPhone checks.
+The owner confirmed improved Pause feedback on the iPhone, but the expected End
+confirmation did not appear. Recorded request-End handler times were 23–61 ms;
+these do not include the system's visible redraw.
+
+## Session restoration follow-up (build 446)
+
+The normal-workout decoder previously dropped the persisted session ID and
+pulse-loss pause flag while sanitizing the snapshot. Relaunch therefore assigned
+a different ID, leaving existing controls unable to address that workout. The
+existing round-trip regression test reproduced the loss; both optional fields
+are now retained. Older snapshots without these fields remain supported.
+
+Each action reconciles its final snapshot even on an ignored stale action or
+error. Waiting redaction was removed after the owner reported blinking without
+the expected confirmation. End still requests confirmation; it never silently
+discards or bypasses storage. Retest End from both widget and Live Activity after
+a background restart. Device confirmation behavior remains unverified.
+
+The final macOS build and 40 targeted tests passed, including the previously
+failing restoration case. The iOS app/widgets/watch build, twelve layout renders,
+translation and source-hygiene checks passed. Apple-only control-state fields are
+preserved; no database schema, physiological values or backup whitelist changed.
