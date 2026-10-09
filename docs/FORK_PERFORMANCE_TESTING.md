@@ -63,3 +63,34 @@ controlled benchmark or evidence that a particular function caused each hitch.
 
 The detailed Instruments captures establish the reported hitch counts. The longer
 capture and its measurement overhead still need validation during ordinary device use.
+
+## Dashboard follow-up (build 447)
+
+A local archive read contained 527 frame-summary windows across the primary tabs,
+including 461 Today windows (about 37.5 sampled minutes) and 54 Trends windows
+(about 4.3 sampled minutes). Today recorded 2,026 callback intervals over 33 ms,
+with a worst interval of 163.3 ms; Trends recorded 170, with a worst of 163.2 ms.
+The median window p95 was 16.7 ms for both. These are mixed ordinary-use captures
+from earlier test builds, not controlled scrolling runs or rendered-frame measurements.
+They confirm intermittent stalls without identifying their exact cause.
+
+Today and Trends previously supplied one eager inner VStack to a lazy scaffold.
+That eagerly laid out the entire inner card column. Both inner columns now use the
+native LazyVStack with their existing spacing, order and content. A reduced native
+macOS probe of this nesting built 14 card bodies initially with the eager column,
+versus 3 with the lazy column; scrolling materialized the next cards. This verifies
+that work is deferred, not an iPhone hitch reduction.
+
+Trends' existing resolved-data cache now retains the calendar's parsed dates under
+the same repository-generation/range/day/locale invalidation. Calendar day and week
+identities come from their dates instead of new UUIDs, so unchanged columns retain
+identity across redraws. The layout and scores are unchanged. This follows Apple's
+[identity and update guidance](https://developer.apple.com/videos/play/wwdc2023/10160/).
+The separate native chart-rendering change is described in FORK_CHART_PERFORMANCE.md.
+
+Each new capture start includes the app version and build, allowing future summaries
+to be separated by installed version. There is no new switch, watcher, background
+execution or export. The existing foreground-only capture remains opt-in.
+
+A new iPhone Today/Trends scroll comparison remains required after installing the
+combined build. Raw archives and probes stay in ignored local build directories.
