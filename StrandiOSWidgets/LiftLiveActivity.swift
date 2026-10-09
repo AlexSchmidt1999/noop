@@ -55,21 +55,26 @@ struct LiftLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                // The heart rate, where the island has the room for it, with the dumbbell standing in until
-                // the strap reports one — so this side is never the blank it was (Utku, 22 Sep 2026).
-                Label {
-                    Text(context.state.bpm.map(String.init) ?? "").monospacedDigit()
-                } icon: {
-                    Image(systemName: context.state.bpm == nil ? "dumbbell.fill" : "heart.fill")
+                if let bpm = context.state.bpm {
+                    HStack(spacing: NoopMetrics.space1) {
+                        Image(systemName: "heart.fill")
+                            .resizable().scaledToFit()
+                            .frame(width: NoopMetrics.space4, height: NoopMetrics.space4)
+                        Text(bpm, format: .number).monospacedDigit()
+                    }
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(StrandPalette.metricRose)
+                    .frame(height: NoopMetrics.space6)
+                } else {
+                    WorkoutTypeIcon(workoutType: .strength, size: NoopMetrics.space4, color: tint)
+                        .frame(width: NoopMetrics.space6, height: NoopMetrics.space6)
                 }
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(context.state.bpm == nil ? tint : StrandPalette.metricRose)
             } compactTrailing: {
                 // Sized like the Lock Screen's clock: a running `Text(timerInterval:)` takes every point it
                 // is offered, which stretched the island and left the digits adrift in its middle with blank
-                // to their right (Utku, 22 Sep 2026). A hidden "00:00" in the same font gives the region the
+                // to their right (Utku, 22 Sep 2026). A hidden "0:00:00" in the same font gives the region the
                 // width of the clock itself, and the live one is right-aligned over it.
-                Text(verbatim: "00:00")
+                Text(verbatim: "0:00:00")
                     .font(StrandFont.captionNumber)
                     .monospacedDigit()
                     .hidden()
@@ -77,10 +82,17 @@ struct LiftLiveActivity: Widget {
                         view.clock
                             .font(StrandFont.captionNumber)
                             .multilineTextAlignment(.trailing)
+                            .lineLimit(1).minimumScaleFactor(0.8)
                     }
+                    .frame(height: NoopMetrics.space6)
             } minimal: {
-                Image(systemName: context.state.training?.pausedAt == nil ? "dumbbell.fill" : "pause.fill").foregroundStyle(tint)
+                Image(systemName: context.state.training?.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
+                    .resizable().scaledToFit()
+                    .frame(width: NoopMetrics.space4, height: NoopMetrics.space4)
+                    .foregroundStyle(tint)
+                    .frame(width: NoopMetrics.space6, height: NoopMetrics.space6)
             }
+            .contentMargins(.horizontal, NoopMetrics.space4, for: .expanded)
         }
     }
 }

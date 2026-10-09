@@ -29,16 +29,20 @@ struct WorkoutLiveActivity: Widget {
             } compactLeading: {
                 WorkoutTypeIcon(workoutType: context.state.training.sport ?? KnownWorkoutType.other.rawValue,
                                 size: NoopMetrics.space4, color: StrandPalette.accent)
+                    .frame(width: NoopMetrics.space6, height: NoopMetrics.space6)
             } compactTrailing: {
                 Text(verbatim: "0:00:00").font(StrandFont.captionNumber).hidden()
                     .overlay(alignment: .trailing) {
                         TrainingClock(training: context.state.training).font(StrandFont.captionNumber)
                             .multilineTextAlignment(.trailing).lineLimit(1).minimumScaleFactor(0.8)
                     }
+                    .frame(height: NoopMetrics.space6)
             } minimal: {
                 WorkoutTypeIcon(workoutType: context.state.training.sport ?? KnownWorkoutType.other.rawValue,
                                 size: NoopMetrics.space4, color: StrandPalette.accent)
+                    .frame(width: NoopMetrics.space6, height: NoopMetrics.space6)
             }
+            .contentMargins(.horizontal, NoopMetrics.space4, for: .expanded)
         }
     }
 }
