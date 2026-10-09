@@ -3204,6 +3204,18 @@ struct TodayView: View {
             }
             heroRingColumn(section: .effort, domain: .effort,
                            detailRoute: .metric(HeroRingMetric.effort)) { effortRing(d: d, diameter: ring) }
+                // Use the existing metadata/gap beneath Effort without changing the row's height.
+                .overlay(alignment: .bottom) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(StrandFont.caption.weight(.semibold))
+                        .foregroundStyle(StrandPalette.accent)
+                        .frame(width: NoopMetrics.space6, height: NoopMetrics.space3)
+                        .offset(y: NoopMetrics.space3)
+                        .opacity(restIsPendingSync ? 1 : 0)
+                        .help("Pending sync · strap history still offloading")
+                        .accessibilityLabel("Pending sync · strap history still offloading")
+                        .accessibilityHidden(!restIsPendingSync)
+                }
             // `provenanceKey` spells the same string the route does and stays a literal on purpose: it
             // asks which SOURCE won this day, not which catalog entry to open. See `HeroRingMetric`.
             heroRingColumn(section: .rest, domain: .rest, provenanceKey: "sleep_performance",
@@ -3303,22 +3315,10 @@ struct TodayView: View {
             // Charge ring). Charge's chevron opens the "what shaped it" breakdown (its richest explanation);
             // Effort / Rest open their scoring-guide section.
             HStack(spacing: 3) {
-                // Keep the balancing chevron's existing slot; a sync cue must not move the Rest label.
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .bold))
                     .opacity(0)
                     .accessibilityHidden(true)
-                    .overlay {
-                        if domain == .rest {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(StrandFont.overline)
-                                .foregroundStyle(StrandPalette.textTertiary)
-                                .opacity(restIsPendingSync ? 1 : 0)
-                                .help("Pending sync · strap history still offloading")
-                                .accessibilityLabel("Pending sync · strap history still offloading")
-                                .accessibilityHidden(!restIsPendingSync)
-                        }
-                    }
                 Button { if let onOpenBreakdown { onOpenBreakdown() } else { guideSection = section } } label: {
                     HStack(spacing: 3) {
                         // The catalog stores the natural-case domain word; uppercase follows its locale.
