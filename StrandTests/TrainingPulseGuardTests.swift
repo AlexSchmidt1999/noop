@@ -2,6 +2,43 @@ import XCTest
 @testable import Strand
 
 final class TrainingPulseGuardTests: XCTestCase {
+    func testDisconnectionNeverPausesAndReconnectStartsANewWindow() {
+        var state = TrainingPulseGuard()
+        state.receive(at: 1_000)
+        state.setConnected(false, at: 1_599)
+        XCTAssertNil(state.deadline)
+        XCTAssertFalse(state.isDue(at: 20_000))
+        state.setConnected(true, at: 20_000)
+        XCTAssertEqual(state.lastSampleSec, 1_000, "a connection must not masquerade as a sample")
+        XCTAssertFalse(state.isDue(at: 20_599))
+        XCTAssertTrue(state.isDue(at: 20_600))
+        state.receive(at: 20_500)
+        XCTAssertEqual(state.deadline, 21_100)
+    }
+
+    func testReconnectWithoutFirstSampleDoesNotArmAndRepeatedConnectionDoesNotExtend() {
+        var state = TrainingPulseGuard()
+        state.setConnected(false, at: 1_000)
+        state.setConnected(true, at: 2_000)
+        XCTAssertNil(state.deadline)
+        state.receive(at: 2_100)
+        state.setConnected(true, at: 2_699)
+        XCTAssertTrue(state.isDue(at: 2_700))
+    }
+
+    func testOfflineCheckpointSurvivesRestartAndLegacySnapshotsStillDecode() throws {
+        var state = TrainingPulseGuard()
+        state.receive(at: 1_000)
+        state.setConnected(false, at: 1_100)
+        var restored = try JSONDecoder().decode(TrainingPulseGuard.self, from: JSONEncoder().encode(state.checkpoint))
+        XCTAssertNil(restored.deadline)
+        restored.setConnected(true, at: 30_000)
+        XCTAssertEqual(restored.deadline, 30_600)
+        let legacy = try JSONDecoder().decode(TrainingPulseGuard.self,
+            from: Data("{\"lastSampleSec\":1000,\"recoveryAllowance\":30}".utf8))
+        XCTAssertEqual(legacy.deadline, 1_630)
+    }
+
     func testArmsOnlyAfterAReceiptAndUsesExactBoundary() {
         var guardState = TrainingPulseGuard()
         XCTAssertFalse(guardState.isDue(at: 10_000))

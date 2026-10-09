@@ -32,6 +32,7 @@ final class TrainingCoordinator: ObservableObject {
     var isShowingWorkout: Bool { workoutActivity?.activityState == .active || workoutActivity?.activityState == .stale }
     private var canStartFromIntent = false
     private var holdsRealtimeHR = false
+    private var connectionAvailable = false
 
     init(model: AppModel, lift: LiftSessionController, liftActivity: LiftLiveActivityController) {
         self.model = model; self.lift = lift; self.liftActivity = liftActivity
@@ -66,6 +67,10 @@ final class TrainingCoordinator: ObservableObject {
         lift.changesSettled.sink { [weak self] _ in self?.reconcile() }.store(in: &subscriptions)
         lift.strapStepTaken.sink { [weak self] _ in self?.publish(alert: true) }.store(in: &subscriptions)
         model.live.$heartRate.sink { [weak liftActivity] bpm in liftActivity?.updateHeartRate(bpm) }.store(in: &subscriptions)
+        model.live.$connected.removeDuplicates().sink { [weak self] connected in
+            self?.connectionAvailable = connected
+            self?.reconcile()
+        }.store(in: &subscriptions)
         NotificationPresenter.shared.onTrainingAction = { [weak self] action, id, completion in
             Task {
                 defer { completion() }
@@ -95,6 +100,8 @@ final class TrainingCoordinator: ObservableObject {
 
     private func receivedPulse(at date: Date) {
         let now = Int(date.timeIntervalSince1970)
+        // An accepted live packet proves a link even if its connection publication arrives later.
+        connectionAvailable = true
         reconcile(at: date, publish: false)
         for id in ids where !isPaused(id) {
             var guardState = guards[id] ?? TrainingPulseGuard()
@@ -128,6 +135,18 @@ final class TrainingCoordinator: ObservableObject {
         }
         for id in ids {
             let paused = isPaused(id)
+            if var state = guards[id] {
+                state.setConnected(connectionAvailable, at: now)
+                if state != guards[id] {
+                    guards[id] = state
+                    lastCheckpoint.removeValue(forKey: id)
+                    cancelNotification(id)
+                    if !paused, let deadline = state.deadline {
+                        scheduleNotification(id: id, at: Date(timeIntervalSince1970: Double(deadline + 30)))
+                    }
+                    persistGuards()
+                }
+            }
             if wasPaused[id] == true && !paused {
                 guards[id]?.resume(at: now)
                 lastCheckpoint.removeValue(forKey: id)
