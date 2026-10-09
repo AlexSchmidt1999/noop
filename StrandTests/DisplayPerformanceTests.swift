@@ -64,6 +64,7 @@ final class DisplayPerformanceTests: XCTestCase {
         DisplayPerformanceMonitor.shared.emit = { captured.append($0) }
         DisplayPerformanceMonitor.shared.start()
         XCTAssertTrue(DisplayPerformanceMonitor.shared.isRunning)
+        XCTAssertEqual(captured.filter { $0.hasPrefix("captureStart ") }.count, 1)
         XCTAssertTrue(captured.contains { $0.hasPrefix("deviceMetrics ") },
                       "start() must emit one device-metrics line, got \(captured)")
         DisplayPerformanceMonitor.shared.stop()

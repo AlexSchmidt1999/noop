@@ -133,6 +133,7 @@ final class DisplayPerformanceMonitor {
         memoryPeakMB = 0
         currentMemoryMB = nil
         sampleMemory()
+        emit?("captureStart version=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown") build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown")")
         emitDeviceMetrics()
         emitDataVolume()
 
