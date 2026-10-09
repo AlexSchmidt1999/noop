@@ -62,6 +62,8 @@ enum ActiveWorkoutPersistence {
             liveStrain: raw.liveStrain.isFinite ? max(0, raw.liveStrain) : 0,
             pausedAtSec: raw.pausedAtSec.flatMap { $0 > 0 ? $0 : nil },
             pausedDurationSec: raw.pausedDurationSec.map { max(0, $0) },
+            sessionID: raw.sessionID,
+            pausedForPulseLoss: raw.pausedForPulseLoss
         )
     }
 
