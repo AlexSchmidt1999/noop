@@ -53,6 +53,7 @@ final class LiftSessionController: ObservableObject {
     var isActive: Bool { engine != nil && engine?.isFinished == false }
     private(set) var sessionID = UUID().uuidString
     private(set) var pausedForPulseLoss = false
+    private var completedPauses: [DateInterval] = []
 
     func pause(at now: Int = LiftSessionController.unixNow, pulseLoss: Bool = false) {
         guard isActive, engine?.isPaused == false else { return }
@@ -64,6 +65,10 @@ final class LiftSessionController: ObservableObject {
     func resume(at now: Int = LiftSessionController.unixNow) {
         guard !isSaving, engine?.isPaused == true else { return }
         pausedForPulseLoss = false
+        if let pausedAt = engine?.pausedAt {
+            completedPauses.append(DateInterval(start: Date(timeIntervalSince1970: Double(pausedAt)),
+                                                end: Date(timeIntervalSince1970: Double(max(pausedAt, now)))))
+        }
         engine?.resume(now: now)
         persist()
     }
@@ -223,6 +228,12 @@ final class LiftSessionController: ObservableObject {
                                      durationS: Double(duration), energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil,
                                      distanceM: nil, zonesJSON: nil, notes: programName, steps: nil)
             _ = try await store.upsertWorkouts([workout], deviceId: repo.deviceId)
+            var pauses = completedPauses
+            if let pausedAt = engine?.pausedAt {
+                pauses.append(DateInterval(start: Date(timeIntervalSince1970: Double(pausedAt)),
+                                           end: Date(timeIntervalSince1970: Double(max(pausedAt, endTs)))))
+            }
+            RecordedWorkoutHistory.remember(workout, deviceId: repo.deviceId, pauses: pauses)
         }
         return (finishedEngine.plan, finished)
     }
@@ -236,6 +247,7 @@ final class LiftSessionController: ObservableObject {
         lastSessionLoadedID = nil
         pausedForPulseLoss = false
         sessionRpeText = ""
+        completedPauses = []
         let stamp = Int(Date().timeIntervalSince1970)
         engine = LiftSessionEngine(plan: plan, startTs: stamp)
         self.programId = programId
@@ -267,6 +279,7 @@ final class LiftSessionController: ObservableObject {
     func resume(from snapshot: LiftSessionPersistence.Snapshot, present: Bool = false) {
         sessionID = snapshot.sessionID ?? "lift-\(snapshot.startSec)"
         pausedForPulseLoss = snapshot.pausedForPulseLoss ?? false
+        completedPauses = snapshot.completedPauses ?? []
         engine = LiftSessionPersistence.engine(from: snapshot)
         programId = snapshot.programId
         programName = snapshot.programName
@@ -852,6 +865,7 @@ final class LiftSessionController: ObservableObject {
         snapshot.sessionID = sessionID
         snapshot.pausedForPulseLoss = pausedForPulseLoss
         snapshot.sessionRpeText = sessionRpeText.isEmpty ? nil : sessionRpeText
+        snapshot.completedPauses = completedPauses
         LiftSessionPersistence.store(snapshot)
     }
 }

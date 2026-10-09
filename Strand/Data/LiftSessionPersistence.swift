@@ -41,6 +41,7 @@ enum LiftSessionPersistence {
         var stagePausedDuration: Int? = nil
         var pausedForPulseLoss: Bool? = nil
         var sessionRpeText: String? = nil
+        var completedPauses: [DateInterval]? = nil
 
         struct PendingValue: Codable, Equatable {
             var exerciseIndex: Int

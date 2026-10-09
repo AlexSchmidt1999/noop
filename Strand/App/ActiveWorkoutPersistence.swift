@@ -32,6 +32,7 @@ enum ActiveWorkoutPersistence {
         var pausedDurationSec: Int? = nil
         var sessionID: String? = nil
         var pausedForPulseLoss: Bool? = nil
+        var completedPauses: [DateInterval]? = nil
     }
 
     /// The single `UserDefaults` key (JSON-encoded `Snapshot`). Namespaced like `moments`/`sleepMarks`.
@@ -63,7 +64,8 @@ enum ActiveWorkoutPersistence {
             pausedAtSec: raw.pausedAtSec.flatMap { $0 > 0 ? $0 : nil },
             pausedDurationSec: raw.pausedDurationSec.map { max(0, $0) },
             sessionID: raw.sessionID,
-            pausedForPulseLoss: raw.pausedForPulseLoss
+            pausedForPulseLoss: raw.pausedForPulseLoss,
+            completedPauses: raw.completedPauses
         )
     }
 

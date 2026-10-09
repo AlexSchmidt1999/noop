@@ -3023,7 +3023,12 @@ final class Repository: ObservableObject {
             }
             return
         }
-        _ = try? await store.upsertWorkouts([row], deviceId: deviceId)
+        do {
+            _ = try await store.upsertWorkouts([row], deviceId: deviceId)
+            if let old, row.avgHr != old.avgHr || row.energyKcal != old.energyKcal {
+                RecordedWorkoutHistory.forget(old, deviceId: deviceId)
+            }
+        } catch { return }
     }
 
     /// Re-label a legacy detected bout: copy it to a manual strap row with the chosen sport, then delete
