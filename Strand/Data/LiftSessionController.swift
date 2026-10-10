@@ -114,7 +114,6 @@ final class LiftSessionController: ObservableObject {
     /// and hands it over; until it does (a session resumed straight into the bar after a relaunch, say)
     /// the grey numbers fall through to the program's target, which is the layer below.
     @Published private var lastSession: [String: [Int: LiftSetCarry]] = [:]
-    private var lastSessionLoadedID: String?
     /// The running rest's warning and end, and the end they were set for — see `scheduleRestTimers`.
     private var restTimers: [Task<Void, Never>] = []
     private var scheduledRestEnd: Int?
@@ -183,16 +182,16 @@ final class LiftSessionController: ObservableObject {
     func loadLastSession(repo: Repository) async {
         guard let engine, let store = await repo.storeHandle() else { return }
         let id = sessionID
-        guard lastSessionLoadedID != id else { return }
-        lastSessionLoadedID = id
+        let exercises = Set(engine.plan.map(\.exercise))
+        guard Set(lastSession.keys) != exercises else { return }
         var out: [String: [Int: LiftSetCarry]] = [:]
-        for exercise in Set(engine.plan.map(\.exercise)) {
+        for exercise in exercises {
             let rows = (try? await store.lastLiftSets(deviceId: repo.deviceId, exercise: exercise, before: engine.startTs)) ?? []
             var bySet: [Int: LiftSetCarry] = [:]
             for row in rows where !row.isWarmup { bySet[row.setIndex] = LiftSetCarry(weightKg: row.weightKg, reps: row.reps) }
             out[exercise] = bySet
         }
-        guard sessionID == id else { return }
+        guard sessionID == id, Set(self.engine?.plan.map(\.exercise) ?? []) == exercises else { return }
         setLastSession(out)
     }
 
@@ -244,7 +243,6 @@ final class LiftSessionController: ObservableObject {
         guard !isActive else { return }
         sessionID = UUID().uuidString
         lastSession = [:]
-        lastSessionLoadedID = nil
         pausedForPulseLoss = false
         sessionRpeText = ""
         completedPauses = []

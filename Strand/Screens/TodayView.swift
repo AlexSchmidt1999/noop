@@ -3305,29 +3305,36 @@ struct TodayView: View {
             // ONE chevron affordance under every ring, so the row reads uniformly (no second cue on the
             // Charge ring). Charge's chevron opens the "what shaped it" breakdown (its richest explanation);
             // Effort / Rest open their scoring-guide section.
-            HStack(spacing: 3) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .opacity(0)
-                    .accessibilityHidden(true)
-                Button { if let onOpenBreakdown { onOpenBreakdown() } else { guideSection = section } } label: {
-                    HStack(spacing: 3) {
-                        // The catalog stores the natural-case domain word; uppercase follows its locale.
-                        Text(Self.domainLabel(domain))
-                            .textCase(.uppercase)
-                            .font(StrandFont.overline)
-                            .tracking(StrandFont.overlineTracking)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .opacity(0.6)
-                    }
-                    .foregroundStyle(StrandPalette.textSecondary)
-                    .contentShape(Rectangle())
+            Button { if let onOpenBreakdown { onOpenBreakdown() } else { guideSection = section } } label: {
+                HStack(spacing: 3) {
+                    // #937: an invisible LEADING twin of the trailing chevron. The word + chevron used to
+                    // centre as ONE block, which pushed the word visibly off the ring's axis (worst on short
+                    // labels like REST). Balancing the row with a same-sized clear chevron re-centres the
+                    // WORD itself under the ring while the real chevron stays visible on the trailing side.
+                    // opacity(0) keeps its layout slot (a conditional would remove it), and the HStack stays
+                    // plain leading-to-trailing content with no alignment-guide math, so LTR and RTL mirror
+                    // identically. Hidden from VoiceOver: it is a spacer, not content.
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .opacity(0)
+                        .accessibilityHidden(true)
+                    // The CHARGE/EFFORT/REST hero label is localized: the catalog key is the natural-case
+                    // domain word (Charge/Effort/Rest) and `.textCase(.uppercase)` does the uppercasing in
+                    // the current locale, so a de/es/ru build shows the translated word, not the English id.
+                    Text(Self.domainLabel(domain))
+                        .textCase(.uppercase)
+                        .font(StrandFont.overline)
+                        .tracking(StrandFont.overlineTracking)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .opacity(0.6)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(onOpenBreakdown == nil ? Self.domainGuideAccessibilityLabel(domain)
-                                                            : "See what shaped your Charge")
+                .foregroundStyle(StrandPalette.textSecondary)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel(onOpenBreakdown == nil ? Self.domainGuideAccessibilityLabel(domain)
+                                                        : "See what shaped your Charge")
             // Component 4, the real per-day source under the ring (only when this score has a value for
             // the day AND we resolved its winner; a calibrating / empty ring shows no provenance badge).
             // Apple Watch (M1): a watch-sourced score reads "Apple Watch" with its confidence bound to the

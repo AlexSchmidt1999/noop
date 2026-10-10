@@ -398,13 +398,13 @@ struct LiftSessionEngine: Equatable {
             if let next = slotAfter(slot) {
                 stage = .working(next)
                 stageStartedAt = now
-            stagePausedDuration = 0
+                stagePausedDuration = 0
             } else {
                 // Sheet complete: stay put rather than inventing a stage. The user finishes when
                 // they are ready, and the time until then is the cool-down.
                 stage = .resting(slot, endsAt: now)
                 stageStartedAt = now
-            stagePausedDuration = 0
+                stagePausedDuration = 0
             }
 
         case .finished:
