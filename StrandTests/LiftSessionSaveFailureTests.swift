@@ -12,8 +12,11 @@ final class LiftSessionSaveFailureTests: XCTestCase {
         let store = try await WhoopStore(path: path)
         let repo = Repository(deviceId: "training-test", store: store)
         let controller = LiftSessionController(buzz: { _ in }, setStrapHandler: { _ in })
+        let savedHistory = UserDefaults.standard.object(forKey: RecordedWorkoutHistory.defaultsKey)
         defer {
             controller.discard()
+            if let savedHistory { UserDefaults.standard.set(savedHistory, forKey: RecordedWorkoutHistory.defaultsKey) }
+            else { UserDefaults.standard.removeObject(forKey: RecordedWorkoutHistory.defaultsKey) }
         }
         controller.start(plan: [.init(exercise: "Row", targetSets: 2, restSec: 90)], programId: nil, programName: nil)
         controller.advance()
@@ -26,6 +29,8 @@ final class LiftSessionSaveFailureTests: XCTestCase {
             _ = try await controller.save(repo: repo, completingUnfinished: false, sessionRpe: nil)
             XCTFail("the database rejected the workout write")
         } catch {}
+        XCTAssertFalse(RecordedWorkoutHistory.load().contains { $0.deviceId == "training-test" },
+                       "failed writes must not register a saved workout")
         XCTAssertTrue(controller.isActive)
         XCTAssertTrue(controller.engine?.isPaused == true)
         XCTAssertEqual(LiftSessionPersistence.load()?.sessionID, id)
@@ -43,6 +48,7 @@ final class LiftSessionSaveFailureTests: XCTestCase {
         let sets = try await store.liftSets(sessionId: id)
         XCTAssertEqual(sets.count, 1, "a pending set removed after a failed save must not remain in storage")
         XCTAssertEqual(sets.filter { $0.startTs != nil }.count, 1, "an open set is never invented as completed")
+        XCTAssertEqual(RecordedWorkoutHistory.load().filter { $0.deviceId == "training-test" }.count, 1)
         controller.finishedSaving()
         XCTAssertNil(controller.engine)
         XCTAssertNil(LiftSessionPersistence.load())

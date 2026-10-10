@@ -39,6 +39,7 @@ final class ActiveWorkoutPersistenceTests: XCTestCase {
         var original = snapshot(pausedAtSec: 1_700_000_120, pausedDurationSec: 45)
         original.sessionID = "stable-widget-session"
         original.pausedForPulseLoss = true
+        original.completedPauses = [DateInterval(start: Date(timeIntervalSince1970: 1_700_000_050), duration: 45)]
         let decoded = ActiveWorkoutPersistence.decode(ActiveWorkoutPersistence.encode(original))
         XCTAssertEqual(decoded, original)
     }

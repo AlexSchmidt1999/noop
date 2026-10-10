@@ -126,6 +126,7 @@ final class AppModel: ObservableObject {
         var pausedDuration: TimeInterval = 0
         var sessionID = UUID().uuidString
         var pausedForPulseLoss = false
+        var completedPauses: [DateInterval] = []
 
         var isPaused: Bool { pausedAt != nil }
 
@@ -903,7 +904,8 @@ final class AppModel: ObservableObject {
                 liveStrain: w.liveStrain,
                 pausedAtSec: w.pausedAt.map { Int($0.timeIntervalSince1970) },
                 pausedDurationSec: Int(w.pausedDuration),
-                sessionID: w.sessionID, pausedForPulseLoss: w.pausedForPulseLoss))
+                sessionID: w.sessionID, pausedForPulseLoss: w.pausedForPulseLoss,
+                completedPauses: w.completedPauses))
     }
 
     /// If a manual workout was in flight when iOS killed the app, rebuild `activeWorkout` from the durable
@@ -922,6 +924,7 @@ final class AppModel: ObservableObject {
         w.pausedDuration = TimeInterval(snap.pausedDurationSec ?? 0)
         w.sessionID = snap.sessionID ?? "workout-\(snap.startSec)"
         w.pausedForPulseLoss = snap.pausedForPulseLoss ?? false
+        w.completedPauses = snap.completedPauses ?? []
         activeWorkout = w
 
         // Rebuild the transient GPS lifecycle flag as well as the durable workout value. Without this,
@@ -955,6 +958,7 @@ final class AppModel: ObservableObject {
     func resumeWorkout(at date: Date = Date()) {
         guard var w = activeWorkout, let pausedAt = w.pausedAt, !isFinishingWorkout else { return }
         w.pausedDuration += max(0, date.timeIntervalSince(pausedAt))
+        w.completedPauses.append(DateInterval(start: pausedAt, end: max(pausedAt, date)))
         w.pausedAt = nil
         w.pausedForPulseLoss = false
         activeWorkout = w
@@ -1013,13 +1017,7 @@ final class AppModel: ObservableObject {
             route = gpsRecorder.capturedRoute()
         }
         let samples = w.samples
-        guard samples.count >= 2 || route != nil else {
-            emitWorkoutsTrace(WorkoutsTrace.sessionLine(
-                event: "discarded", sportKey: WorkoutSource.traceSportKey(w.sport),
-                hrSamples: samples.count, gpsPoints: route == nil ? 0 : nil))
-            clearActiveWorkout()
-            return
-        }
+        // An intentional workout survives missing live HR/GPS; strap history may arrive later.
         let end = Date()
         // A session under a minute is a start/stop the wearer did not mean to keep, and it was the thing
         // that made deletion feel broken: the list filled with 5-30 second entries (#2278). Discarded HERE,
@@ -1076,6 +1074,9 @@ final class AppModel: ObservableObject {
         if let route { RouteStore.store(route, startTs: startTs, sport: w.sport) }
         guard let store = await repo.storeHandle() else { throw CocoaError(.fileWriteUnknown) }
         _ = try await store.upsertWorkouts([row], deviceId: deviceId)
+        var pauses = w.completedPauses
+        if let pausedAt = w.pausedAt { pauses.append(DateInterval(start: pausedAt, end: max(pausedAt, end))) }
+        RecordedWorkoutHistory.remember(row, deviceId: deviceId, pauses: pauses)
         clearActiveWorkout()
         lastWorkout = row
         // Workouts & GPS test mode: one session-end summary tagged `.workouts` (the lastSessionSummary readout
