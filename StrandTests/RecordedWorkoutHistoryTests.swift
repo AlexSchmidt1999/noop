@@ -6,8 +6,8 @@ import StrandAnalytics
 
 @MainActor
 final class RecordedWorkoutHistoryTests: XCTestCase {
-    private func row(start: Int, sport: String = "Running", kcal: Double? = nil, strain: Double? = nil) -> WorkoutRow {
-        WorkoutRow(startTs: start, endTs: start + 1_800, sport: sport, source: "manual",
+    private func row(start: Int, sport: String = "Running", source: String = "manual", kcal: Double? = nil, strain: Double? = nil) -> WorkoutRow {
+        WorkoutRow(startTs: start, endTs: start + 1_800, sport: sport, source: source,
                    durationS: 1_600, energyKcal: kcal, avgHr: nil, maxHr: nil, strain: strain,
                    distanceM: 4_000, zonesJSON: "kept", notes: "kept", steps: 2_000)
     }
@@ -25,6 +25,7 @@ final class RecordedWorkoutHistoryTests: XCTestCase {
         XCTAssertEqual(RecordedWorkoutHistory.load(from: defaults).count, 1)
         XCTAssertTrue(entry.matches(workout, deviceId: "strap-a"))
         XCTAssertFalse(entry.matches(workout, deviceId: "strap-b"))
+        XCTAssertFalse(entry.matches(row(start: start, source: "whoop"), deviceId: "strap-a"))
         XCTAssertFalse(entry.matches(row(start: start, sport: "Strength"), deviceId: "strap-a"))
         XCTAssertTrue(RecordedWorkoutHistory.load(from: defaults, now: workout.endTs + RecordedWorkoutHistory.retentionSeconds + 1).isEmpty)
         XCTAssertEqual(workout.durationS, 1_600)
