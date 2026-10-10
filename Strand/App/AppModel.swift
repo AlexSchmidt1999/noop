@@ -1094,12 +1094,12 @@ final class AppModel: ObservableObject {
     /// Append the current smoothed `bpm` to the active workout and recompute its running strain. Called
     /// from `ingestHR` on every fresh sample; a no-op when no workout is running. Recomputing strain
     /// over the growing window each sample is cheap at the ~1 Hz live-HR cadence.
-    private func captureWorkoutSample() {
+    func captureWorkoutSample(at date: Date = Date()) {
         guard var w = activeWorkout, !w.isPaused, let hr = bpm else { return }
         // A second that already has its sample moves only the peak: publish that, and skip the rescore and the
         // snapshot (the next second's sample carries the peak into the snapshot).
         let peakBefore = w.peakHr
-        guard w.recordSample(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr)) else {
+        guard w.recordSample(HRSample(ts: Int(date.timeIntervalSince1970), bpm: hr)) else {
             if w.peakHr != peakBefore { activeWorkout = w }
             return
         }
