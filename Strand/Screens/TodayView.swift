@@ -1325,6 +1325,8 @@ struct TodayView: View {
                     .frame(minWidth: 320, minHeight: 360)
             }
 
+            pendingSyncIndicator
+
             Spacer(minLength: 8)
 
             // Uniform 36pt circular icon set: recording-status light, updates bell, quick-add (+), menu.
@@ -1584,6 +1586,7 @@ struct TodayView: View {
         }
         #if os(macOS)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) { pendingSyncIndicator }
             // The Updates "ringer" on the TRAILING (top-right) edge of the window toolbar
             // (iOS hosts it in the compact top bar instead).
             ToolbarItem(placement: .primaryAction) {
@@ -3204,18 +3207,6 @@ struct TodayView: View {
             }
             heroRingColumn(section: .effort, domain: .effort,
                            detailRoute: .metric(HeroRingMetric.effort)) { effortRing(d: d, diameter: ring) }
-                // Use the existing metadata/gap beneath Effort without changing the row's height.
-                .overlay(alignment: .bottom) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(StrandFont.caption.weight(.semibold))
-                        .foregroundStyle(StrandPalette.accent)
-                        .frame(width: NoopMetrics.space6, height: NoopMetrics.space3)
-                        .offset(y: NoopMetrics.space3)
-                        .opacity(restIsPendingSync ? 1 : 0)
-                        .help("Pending sync · strap history still offloading")
-                        .accessibilityLabel("Pending sync · strap history still offloading")
-                        .accessibilityHidden(!restIsPendingSync)
-                }
             // `provenanceKey` spells the same string the route does and stays a literal on purpose: it
             // asks which SOURCE won this day, not which catalog entry to open. See `HeroRingMetric`.
             heroRingColumn(section: .rest, domain: .rest, provenanceKey: "sleep_performance",
@@ -3404,13 +3395,22 @@ struct TodayView: View {
         }
     }
 
-    /// Whether today's Rest is provisional because the strap still has records to send. Resolved once and
-    /// read by both surfaces that say so — the hero's sync cue and the Rest tile's caption — so the two can
-    /// never disagree about the same moment.
+    /// Whether today's Rest is provisional because the strap still has records to send.
     private var restIsPendingSync: Bool {
         Self.restPendingSync(restScore: restScore, backfilling: liveBackfillingFlag,
                              historyPendingSync: livePendingSyncFlag,
                              isTodaySelected: selectedDayOffset == 0)
+    }
+
+    private var pendingSyncIndicator: some View {
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .font(StrandFont.caption.weight(.semibold))
+            .foregroundStyle(StrandPalette.textTertiary)
+            .frame(width: NoopMetrics.space5, height: NoopMetrics.space5)
+            .opacity(restIsPendingSync ? 1 : 0)
+            .help("Pending sync · strap history still offloading")
+            .accessibilityLabel("Pending sync · strap history still offloading")
+            .accessibilityHidden(!restIsPendingSync)
     }
 
     /// Rest (sleep composite 0–100) hero ring.
@@ -3933,10 +3933,8 @@ struct TodayView: View {
                 // Component 2: a scored day shows its duration/efficiency caption; an unscored TODAY shows
                 // the "building" hint; a past day with no Rest falls to the honest "Needs the strap" rather
                 // than a bare blank, so the tile always carries a state.
-                caption: restIsPendingSync
-                    ? String(localized: "Pending sync · strap history still offloading")
-                    : (restScore != nil ? restCaption(d)
-                        : (buildingHint(.rest) ?? restCaption(d) ?? Self.needsStrapCaption)),
+                caption: restScore != nil ? restCaption(d)
+                    : (buildingHint(.rest) ?? restCaption(d) ?? Self.needsStrapCaption),
                 accent: restScore.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textPrimary,
                 // The Rest composite (0–100) trend, not raw sleep minutes, tracks the score above (#614).
                 sparkline: sparks["sleep_performance"],
