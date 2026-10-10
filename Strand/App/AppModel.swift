@@ -110,6 +110,25 @@ final class AppModel: ObservableObject {
     /// Android's `ActiveWorkout.gpsEnabled`.
     private var activeWorkoutIsGps = false
 
+    private(set) var workoutSampleRevision: UInt64 = 0
+    private(set) var workoutSampleTask: Task<Void, Never>?
+    private var pendingWorkoutSample: WorkoutSampleWork?
+
+    struct WorkoutSampleWork {
+        let revision: UInt64
+        let snapshot: ActiveWorkoutPersistence.Snapshot
+        let hrMax: Double
+        let method: StrainScorer.Method
+        let sex: String
+
+        func process() -> (strain: Double, data: Data?) {
+            var scored = snapshot
+            scored.liveStrain = StrainScorer.strain(scored.samples, maxHR: hrMax,
+                                                   method: method, sex: sex) ?? 0
+            return (scored.liveStrain, ActiveWorkoutPersistence.encode(scored))
+        }
+    }
+
     /// A manual workout in progress. `samples` accumulate from the smoothed live `bpm`; `liveStrain`
     /// is recomputed as the window grows so the active card can show strain building in real time.
     struct ActiveWorkout: Equatable {
@@ -154,6 +173,15 @@ final class AppModel: ObservableObject {
         /// The maximum heart rate the workout is saved with: the highest sample, or a higher reading a repeated
         /// second folded into `peakHr` (`recordSample`). Nil with no samples.
         var savedPeak: Int? { samples.map(\.bpm).max().map { max($0, peakHr) } }
+
+        var snapshot: ActiveWorkoutPersistence.Snapshot {
+            ActiveWorkoutPersistence.Snapshot(
+                startSec: Int(start.timeIntervalSince1970), sport: sport, samples: samples,
+                avgHr: avgHr, peakHr: peakHr, liveStrain: liveStrain,
+                pausedAtSec: pausedAt.map { Int($0.timeIntervalSince1970) },
+                pausedDurationSec: Int(pausedDuration), sessionID: sessionID,
+                pausedForPulseLoss: pausedForPulseLoss, completedPauses: completedPauses)
+        }
 
         /// Delegates to `ActiveWorkoutClock` so this and the two card surfaces cannot drift apart again.
         func elapsed(at now: Date = Date()) -> TimeInterval {
@@ -887,25 +915,12 @@ final class AppModel: ObservableObject {
                     domain: .dataImport)
     }
 
-    /// Persist the in-flight manual workout to `UserDefaults` so it survives the app being killed mid-
-    /// session (#529). Called on start + each captured sample. A no-op when nothing is running. The Apple
-    /// analogue of Android's `persistNonGpsWorkout`. A distance workout records a route as well, and its
-    /// fixes are banked separately by `ActiveRouteStore`: keeping them out of here is what lets this stay
-    /// a small per-sample write instead of rewriting a growing route on every beat.
-    private func persistActiveWorkout() {
+    /// Bank the latest raw window at a lifecycle boundary, before the app can be suspended.
+    func persistActiveWorkout() {
+        workoutSampleRevision &+= 1
+        pendingWorkoutSample = nil
         guard let w = activeWorkout else { return }
-        ActiveWorkoutPersistence.store(
-            ActiveWorkoutPersistence.Snapshot(
-                startSec: Int(w.start.timeIntervalSince1970),
-                sport: w.sport,
-                samples: w.samples,
-                avgHr: w.avgHr,
-                peakHr: w.peakHr,
-                liveStrain: w.liveStrain,
-                pausedAtSec: w.pausedAt.map { Int($0.timeIntervalSince1970) },
-                pausedDurationSec: Int(w.pausedDuration),
-                sessionID: w.sessionID, pausedForPulseLoss: w.pausedForPulseLoss,
-                completedPauses: w.completedPauses))
+        ActiveWorkoutPersistence.store(w.snapshot)
     }
 
     /// If a manual workout was in flight when iOS killed the app, rebuild `activeWorkout` from the durable
@@ -974,6 +989,8 @@ final class AppModel: ObservableObject {
 
     private func clearActiveWorkout() {
         guard activeWorkout != nil else { return }
+        workoutSampleRevision &+= 1
+        pendingWorkoutSample = nil
         activeWorkout = nil
         if activeWorkoutIsGps { gpsRecorder.stop() }
         activeWorkoutIsGps = false
@@ -1091,25 +1108,49 @@ final class AppModel: ObservableObject {
         await repo.refresh()
     }
 
-    /// Append the current smoothed `bpm` to the active workout and recompute its running strain. Called
-    /// from `ingestHR` on every fresh sample; a no-op when no workout is running. Recomputing strain
-    /// over the growing window each sample is cheap at the ~1 Hz live-HR cadence.
-    func captureWorkoutSample(at date: Date = Date()) {
+    /// Keep every accepted sample; score and encode immutable snapshots off the main actor.
+    func captureWorkoutSample(at date: Date? = nil) {
         guard var w = activeWorkout, !w.isPaused, let hr = bpm else { return }
-        // A second that already has its sample moves only the peak: publish that, and skip the rescore and the
-        // snapshot (the next second's sample carries the peak into the snapshot).
         let peakBefore = w.peakHr
-        guard w.recordSample(HRSample(ts: Int(date.timeIntervalSince1970), bpm: hr)) else {
-            if w.peakHr != peakBefore { activeWorkout = w }
+        guard w.recordSample(HRSample(ts: Int((date ?? Date()).timeIntervalSince1970), bpm: hr)) else {
+            if w.peakHr != peakBefore {
+                activeWorkout = w
+                queueWorkoutSample(w)
+            }
             return
         }
         w.peakHr = max(w.peakHr, hr)
-        w.avgHr = Int((Double(w.samples.map(\.bpm).reduce(0, +)) / Double(w.samples.count)).rounded())
-        w.liveStrain = StrainScorer.strain(w.samples, maxHR: Double(profile.hrMax),
-                                              method: PuffinExperiment.effortMethod, sex: profile.sex) ?? 0
+        w.avgHr = Int((Double(w.samples.reduce(0) { $0 + $1.bpm }) / Double(w.samples.count)).rounded())
         activeWorkout = w
-        // Re-snapshot the durable session so a kill keeps the latest accumulated HR window (#529).
-        persistActiveWorkout()
+        queueWorkoutSample(w)
+    }
+
+    private func queueWorkoutSample(_ workout: ActiveWorkout) {
+        workoutSampleRevision &+= 1
+        pendingWorkoutSample = WorkoutSampleWork(revision: workoutSampleRevision,
+            snapshot: workout.snapshot, hrMax: Double(profile.hrMax),
+            method: PuffinExperiment.effortMethod, sex: profile.sex)
+        guard workoutSampleTask == nil else { return }
+        workoutSampleTask = Task { [weak self] in
+            while let work = self?.pendingWorkoutSample {
+                self?.pendingWorkoutSample = nil
+                let result = await Task.detached(priority: .utility) { work.process() }.value
+                self?.applyWorkoutSample(work, result: result)
+            }
+            self?.workoutSampleTask = nil
+        }
+    }
+
+    func applyWorkoutSample(_ work: WorkoutSampleWork, result: (strain: Double, data: Data?)) {
+        guard work.revision == workoutSampleRevision, var workout = activeWorkout,
+              workout.sessionID == work.snapshot.sessionID, !workout.isPaused else { return }
+        if workout.liveStrain != result.strain {
+            workout.liveStrain = result.strain
+            activeWorkout = workout
+        }
+        if let data = result.data {
+            UserDefaults.standard.set(data, forKey: ActiveWorkoutPersistence.defaultsKey)
+        }
     }
 
     /// Drop the smoothing window and blank the hero number so a resume / re-attach shows ","

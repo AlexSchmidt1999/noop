@@ -1,10 +1,20 @@
 import XCTest
 import WhoopStore
+import WhoopProtocol
 @testable import Strand
 
 @MainActor
 final class OfflineWorkoutSaveTests: XCTestCase {
     func testNoPulseOrGPSStillSavesAndFailedWriteKeepsTheSessionRetryable() async throws {
+        try await assertFailedWriteIsRetryable(samples: [])
+    }
+
+    func testFailedWriteRetainsTheLatestSamplesWhileAWorkerIsPending() async throws {
+        let started = Int(Date().timeIntervalSince1970) - 600
+        try await assertFailedWriteIsRetryable(samples: (0..<600).map { HRSample(ts: started + $0, bpm: 150) })
+    }
+
+    private func assertFailedWriteIsRetryable(samples: [HRSample]) async throws {
         let defaults = UserDefaults.standard
         let keys = [ActiveWorkoutPersistence.defaultsKey, RecordedWorkoutHistory.defaultsKey]
         let originals = keys.map { ($0, defaults.object(forKey: $0)) }
@@ -25,12 +35,19 @@ final class OfflineWorkoutSaveTests: XCTestCase {
         model.repo.setStoreForTesting(store)
         let started = Date().addingTimeInterval(-600)
         model.activeWorkout = AppModel.ActiveWorkout(start: started, sport: "Strength")
+        for sample in samples {
+            model.bpm = sample.bpm
+            model.captureWorkoutSample(at: Date(timeIntervalSince1970: Double(sample.ts)))
+        }
         let id = try XCTUnwrap(model.activeWorkout?.sessionID)
         try execute("CREATE TRIGGER fail_workout_save BEFORE INSERT ON workout BEGIN SELECT RAISE(FAIL, 'test disk error'); END", path: path)
         do { try await model.finishWorkout(); XCTFail("the write should fail") } catch {}
         XCTAssertEqual(model.activeWorkout?.sessionID, id)
         XCTAssertTrue(model.activeWorkout?.isPaused == true)
         XCTAssertEqual(ActiveWorkoutPersistence.load()?.sessionID, id)
+        await model.workoutSampleTask?.value
+        XCTAssertEqual(model.activeWorkout?.samples, samples)
+        XCTAssertEqual(ActiveWorkoutPersistence.load()?.samples, samples)
         try execute("DROP TRIGGER fail_workout_save", path: path)
         try await model.finishWorkout()
         try await model.finishWorkout()
@@ -42,9 +59,16 @@ final class OfflineWorkoutSaveTests: XCTestCase {
         let row = try XCTUnwrap(rows.first)
         XCTAssertEqual(row.sport, "Strength")
         XCTAssertEqual(row.durationS ?? 0, 600, accuracy: 2)
-        XCTAssertNil(row.avgHr)
-        XCTAssertNil(row.strain)
-        XCTAssertNil(row.energyKcal)
+        if samples.isEmpty {
+            XCTAssertNil(row.avgHr)
+            XCTAssertNil(row.strain)
+            XCTAssertNil(row.energyKcal)
+        } else {
+            XCTAssertEqual(row.avgHr, 150)
+            XCTAssertEqual(row.maxHr, 150)
+            XCTAssertNotNil(row.strain)
+            XCTAssertNotNil(row.energyKcal)
+        }
         XCTAssertTrue(RecordedWorkoutHistory.load().contains { $0.matches(row, deviceId: model.deviceId) })
     }
 
