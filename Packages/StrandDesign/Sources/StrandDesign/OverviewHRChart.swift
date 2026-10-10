@@ -280,6 +280,26 @@ public struct OverviewHRChart: View {
             .foregroundStyle(lineStroke)
     }
 
+    // Resolve availability outside Plot's builder for Xcode 26.
+    private func curveMarks(areaFill: LinearGradient, lineStroke: LinearGradient) -> AnyChartContent {
+        if #available(iOS 18, macOS 15, *) {
+            return AnyChartContent(vectorizedMarks(areaFill: areaFill, lineStroke: lineStroke))
+        }
+        return AnyChartContent(Plot {
+            ForEach(displayPoints) { p in
+                AreaMark(x: .value("Time", p.date), y: .value("BPM", p.value))
+                    .interpolationMethod(.catmullRom)
+                    .foregroundStyle(areaFill)
+            }
+            ForEach(displayPoints) { p in
+                LineMark(x: .value("Time", p.date), y: .value("BPM", p.value))
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(lineStroke)
+            }
+        })
+    }
+
     private var marks: some ChartContent {
         Plot {
             // Styles depend on the chart, not the individual sample. Share them across marks so a
@@ -298,21 +318,7 @@ public struct OverviewHRChart: View {
             }
 
             // Vectorized plots retain the same samples and styles without a view per vertex.
-            if #available(iOS 18, macOS 15, *) {
-                vectorizedMarks(areaFill: areaFill, lineStroke: lineStroke)
-            } else {
-                ForEach(displayPoints) { p in
-                    AreaMark(x: .value("Time", p.date), y: .value("BPM", p.value))
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(areaFill)
-                }
-                ForEach(displayPoints) { p in
-                    LineMark(x: .value("Time", p.date), y: .value("BPM", p.value))
-                        .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(lineStroke)
-                }
-            }
+            curveMarks(areaFill: areaFill, lineStroke: lineStroke)
 
             // Wake divider — the sleep→day boundary. Always shown with a sleep band so the band reads
             // even before recovery calibrates (when the gold recovery rule is absent).
