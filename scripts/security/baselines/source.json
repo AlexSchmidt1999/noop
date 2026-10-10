@@ -679,7 +679,7 @@
     "android/gradlew": "fc977a94723af68aaffa4e5d60496fb4aeed1884b6b19e5e2f2fd7612673313d",
     "docs/protocol-examples/check_source_references.py": "dce0d33becfc69a42a847ede982799f88f4f6c83ddc34a4a371589d82cc6fc03",
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
-    "project.yml": "13d5badbf82bc48d37a91f8de80e82f4f97f59a4ead6e15fc9b3f02d3eec5ee2",
+    "project.yml": "5d84631bad51a6fe9bec4b47dd921539de8ddc0527dd210feeea67e9b1c7548f",
     "scripts/security/auto_update.py": "514a480ad272c1159bca0bd2dee76fb15cc9ae57f6426169c9b0348afca48478",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
