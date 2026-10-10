@@ -276,6 +276,18 @@ public struct OverviewHRChart: View {
     // overlay (below) via the proxy — Swift Charts' `.annotation` overflow-clamping needs macOS 14
     // and gets clipped by the card's fixed height on 13, so we position labels ourselves.
 
+    @available(iOS 18, macOS 15, *)
+    @ChartContentBuilder
+    private func vectorizedMarks(areaFill: LinearGradient, lineStroke: LinearGradient) -> some ChartContent {
+        AreaPlot(displayPoints, x: .value("Time", \.date), y: .value("BPM", \.value))
+            .interpolationMethod(.catmullRom)
+            .foregroundStyle(areaFill)
+        LinePlot(displayPoints, x: .value("Time", \.date), y: .value("BPM", \.value))
+            .interpolationMethod(.catmullRom)
+            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            .foregroundStyle(lineStroke)
+    }
+
     private var marks: some ChartContent {
         Plot {
             // Styles depend on the chart, not the individual sample. Share them across marks so a
@@ -295,13 +307,7 @@ public struct OverviewHRChart: View {
 
             // Vectorized plots retain the same samples and styles without a view per vertex.
             if #available(iOS 18, macOS 15, *) {
-                AreaPlot(displayPoints, x: .value("Time", \.date), y: .value("BPM", \.value))
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(areaFill)
-                LinePlot(displayPoints, x: .value("Time", \.date), y: .value("BPM", \.value))
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(lineStroke)
+                vectorizedMarks(areaFill: areaFill, lineStroke: lineStroke)
             } else {
                 ForEach(displayPoints) { p in
                     AreaMark(x: .value("Time", p.date), y: .value("BPM", p.value))
