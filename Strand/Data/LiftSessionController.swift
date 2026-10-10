@@ -217,7 +217,10 @@ final class LiftSessionController: ObservableObject {
                                   weightKg: set.weightKg, reps: set.reps, rpe: set.rpe, isWarmup: set.isWarmup,
                                   startTs: set.startTs, endTs: set.endTs, restSec: set.restSec, note: nil)
             }
+            let existing = try await store.liftSets(sessionId: sessionID)
+            let savedIDs = Set(rows.map(\.id))
             _ = try await store.upsertLiftSets(rows)
+            _ = try await store.deleteLiftSets(ids: existing.filter { !savedIDs.contains($0.id) }.map(\.id))
             let workout = WorkoutRow(startTs: finishedEngine.startTs, endTs: endTs, sport: "Strength", source: "manual",
                                      durationS: Double(duration), energyKcal: nil, avgHr: nil, maxHr: nil, strain: nil,
                                      distanceM: nil, zonesJSON: nil, notes: programName, steps: nil)

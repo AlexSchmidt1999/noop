@@ -21,14 +21,18 @@ final class LiftSessionSaveFailureTests: XCTestCase {
         controller.sessionRpeText = "7"
         let id = controller.sessionID
         let start = try XCTUnwrap(controller.engine?.startTs)
-        try execute("CREATE TRIGGER fail_training_save BEFORE INSERT ON liftSet BEGIN SELECT RAISE(FAIL, 'test disk error'); END", path: path)
+        try execute("CREATE TRIGGER fail_training_save BEFORE INSERT ON workout BEGIN SELECT RAISE(FAIL, 'test disk error'); END", path: path)
         do {
             _ = try await controller.save(repo: repo, completingUnfinished: false, sessionRpe: nil)
-            XCTFail("the database rejected the set write")
+            XCTFail("the database rejected the workout write")
         } catch {}
         XCTAssertTrue(controller.isActive)
         XCTAssertTrue(controller.engine?.isPaused == true)
         XCTAssertEqual(LiftSessionPersistence.load()?.sessionID, id)
+        let partiallySaved = try await store.liftSets(sessionId: id)
+        XCTAssertEqual(partiallySaved.count, 2)
+        XCTAssertEqual(partiallySaved.filter { $0.startTs != nil }.count, 1)
+        XCTAssertTrue(controller.removeSet(fromExercise: 0))
         try execute("DROP TRIGGER fail_training_save", path: path)
         _ = try await controller.save(repo: repo, completingUnfinished: false, sessionRpe: nil)
         _ = try await controller.save(repo: repo, completingUnfinished: false, sessionRpe: nil)
@@ -37,7 +41,7 @@ final class LiftSessionSaveFailureTests: XCTestCase {
         XCTAssertEqual(sessions.first?.id, id)
         XCTAssertEqual(sessions.first?.sessionRpe, 7)
         let sets = try await store.liftSets(sessionId: id)
-        XCTAssertEqual(sets.count, 2)
+        XCTAssertEqual(sets.count, 1, "a pending set removed after a failed save must not remain in storage")
         XCTAssertEqual(sets.filter { $0.startTs != nil }.count, 1, "an open set is never invented as completed")
         controller.finishedSaving()
         XCTAssertNil(controller.engine)

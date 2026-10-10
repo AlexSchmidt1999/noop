@@ -1013,7 +1013,13 @@ final class AppModel: ObservableObject {
             route = gpsRecorder.capturedRoute()
         }
         let samples = w.samples
-        guard samples.count >= 2 || route != nil else { clearActiveWorkout(); return }
+        guard samples.count >= 2 || route != nil else {
+            emitWorkoutsTrace(WorkoutsTrace.sessionLine(
+                event: "discarded", sportKey: WorkoutSource.traceSportKey(w.sport),
+                hrSamples: samples.count, gpsPoints: route == nil ? 0 : nil))
+            clearActiveWorkout()
+            return
+        }
         let end = Date()
         // A session under a minute is a start/stop the wearer did not mean to keep, and it was the thing
         // that made deletion feel broken: the list filled with 5-30 second entries (#2278). Discarded HERE,
