@@ -9,7 +9,9 @@ import com.noop.alarm.SmartAlarmScheduler
 import com.noop.alarm.SmartAlarmStore
 import com.noop.alarm.WindDownScheduler
 import com.noop.alarm.WindDownStore
+import com.noop.analytics.AnalyticsEngine
 import com.noop.analytics.Baselines
+import com.noop.analytics.ChargeBaselines
 import com.noop.analytics.IllnessSignalEngine
 import com.noop.analytics.IllnessWatch
 import com.noop.analytics.IntelligenceEngine
@@ -766,6 +768,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // Vitality windows) keeps its data. Same oldest-first ordering as before.
         repository.recentDaysMergedFlow(deviceId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * #2525: the Charge baselines (HRV, resting HR, respiration) resolved with the engine's own rule from the
+     * imported and own daily rows, read apart because the rule needs to know which nights are imported. The
+     * single funnel every Charge readout below the headline reads (the "What shaped it" rows, the
+     * calibration count, the confidence tier), so none of them can fold a different history than the score
+     * was computed against. Anchored on today's local day and the two recalibration epochs, read on each
+     * emission exactly as the engine reads them per pass. The read range starts at this ViewModel's first
+     * window start, so it only ever covers MORE days than the window; [ChargeBaselines.history] trims to the
+     * current one. Mirrors the Swift `Repository.chargeBaselines`.
+     */
+    val chargeBaselines: StateFlow<ChargeBaselines.Resolved?> = run {
+        val startSec = System.currentTimeMillis() / 1000L
+        val startTz = java.util.TimeZone.getDefault().getOffset(startSec * 1000L) / 1000L
+        val from = Baselines.cutoffKey(AnalyticsEngine.dayString(startSec, startTz), ChargeBaselines.windowDays - 1)
+        combine(
+            repository.importedDailyUnionFlow(deviceId, from, "9999-12-31"),
+            repository.computedDailyUnionFlow(deviceId, from, "9999-12-31"),
+        ) { imported, own ->
+            val nowSec = System.currentTimeMillis() / 1000L
+            val tz = java.util.TimeZone.getDefault().getOffset(nowSec * 1000L) / 1000L
+            val prefs = NoopPrefs.of(appContext)
+            ChargeBaselines.resolve(
+                imported = imported,
+                own = own,
+                anchorDay = AnalyticsEngine.dayString(nowSec, tz),
+                hrvEpoch = prefs.getLong(Baselines.hrvBaselineEpochKey, 0L).toDouble(),
+                recoveryEpoch = prefs.getLong(Baselines.recoveryBaselineEpochKey, 0L).toDouble(),
+            )
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    }
 
     /**
      * Today's measured steps follow the newest confirmed sleep-onset cycle, independently of the fixed
@@ -3012,7 +3047,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         } else null
         // Buzz-WHOOP-4 companion's requested time: the phone alarm's EARLIEST wake time, next occurrence
         // ON A DAY THAT ALARM ACTUALLY FIRES. This routes through the same weekday-aware resolver the
-        // smart alarm uses rather than nextDailyEpochSec, which is unconditionally daily: leaving it daily
+        // smart alarm uses rather than an unconditionally daily schedule: leaving it daily
         // would buzz the strap on a morning the phone alarm is switched off, which is precisely the day the
         // user asked to sleep in. An empty weekday set still means every day.
         //
@@ -3313,32 +3348,6 @@ internal fun nextSmartAlarmEpochSec(
         return cal.timeInMillis / 1000
     }
     return null
-}
-
-/**
- * Next strictly-future occurrence of a daily wake time (today, or tomorrow if already passed), as an
- * epoch-second. Pure + clock-injectable so it can be unit-tested.
- *
- * NO PRODUCTION CALLER as of the phone alarm gaining weekday selection: the "Buzz WHOOP 4/5" companion
- * was its only one, and it now routes through [nextSmartAlarmEpochSec] so a day switched off on the
- * phone alarm cannot leave the strap buzzing on that morning. Kept because it is the reference for what
- * "unconditionally daily" means here — [nextSmartAlarmEpochSec] with an empty weekday set must stay
- * equivalent to it, and its own test is what pins that. Delete it only alongside that equivalence.
- */
-internal fun nextDailyEpochSec(
-    minuteOfDay: Int,
-    nowMs: Long = System.currentTimeMillis(),
-    calendarFactory: () -> java.util.Calendar = { java.util.Calendar.getInstance() },
-): Long {
-    val cal = calendarFactory().apply {
-        timeInMillis = nowMs
-        set(java.util.Calendar.HOUR_OF_DAY, minuteOfDay / 60)
-        set(java.util.Calendar.MINUTE, minuteOfDay % 60)
-        set(java.util.Calendar.SECOND, 0)
-        set(java.util.Calendar.MILLISECOND, 0)
-        if (timeInMillis <= nowMs) add(java.util.Calendar.DAY_OF_YEAR, 1)
-    }
-    return cal.timeInMillis / 1000
 }
 
 /**
