@@ -5,7 +5,10 @@ import WhoopStore
 @MainActor
 final class LiftSessionHistoryLoadingTests: XCTestCase {
     func testAddingAnExerciseLoadsItsPreviousSets() async throws {
-        let store = try await WhoopStore(path: ":memory:")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try await WhoopStore(path: directory.appendingPathComponent("history.sqlite").path)
         let repo = Repository(deviceId: "history-test", store: store)
         let controller = LiftSessionController(buzz: { _ in }, setStrapHandler: { _ in })
         defer { controller.discard() }

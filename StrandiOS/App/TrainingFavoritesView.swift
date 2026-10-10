@@ -38,7 +38,7 @@ struct TrainingFavoritesView: View {
                     }
                 }
                 .buttonStyle(.noopSecondary)
-                Text("After the first live pulse, ten minutes without new measurements pauses training. Training without a sensor remains available.")
+                Text("After the first live pulse, ten minutes without new measurements pauses training while the sensor is connected. Training continues when the sensor disconnects.")
                     .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
                 if let error { Text(error).font(StrandFont.footnote).foregroundStyle(StrandPalette.metricAmber) }
             }
