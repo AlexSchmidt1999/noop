@@ -15,7 +15,8 @@ enum RecordedWorkoutHistory {
         var pauses: [DateInterval]
 
         func matches(_ row: WorkoutRow, deviceId: String) -> Bool {
-            self.deviceId == deviceId && startTs == row.startTs && endTs == row.endTs && sport == row.sport
+            row.source == "manual" && self.deviceId == deviceId
+                && startTs == row.startTs && endTs == row.endTs && sport == row.sport
         }
 
         func activeSamples(_ samples: [HRSample]) -> [HRSample] {
