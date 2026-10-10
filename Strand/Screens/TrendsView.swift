@@ -308,30 +308,22 @@ struct TrendsView: View {
                 // An unrelated Repository publication must not re-filter five years of history.
                 let metrics = resolvedMetrics
                 LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
-                    // The main card list ripples in once on appear (Reduce-Motion safe).
+                    // Charts enter directly; lazy scrolling must not schedule staggered layout animations.
                     Group {
                         // Week-in-review digest (#208) with prev/next week browsing (#710) — self-hides
                         // only when NO week in history has data. Past weeks render in the same format.
                         weeklyDigestNav
-                            .staggeredAppear(index: 0)
                         // The Charge / Effort / Rest trio, presented in NOOP's pip language.
                         weekInReview(charge: metrics.recovery, effort: metrics.strain, rest: metrics.rest)
-                            .staggeredAppear(index: 1)
                         rangeBar(recovery: metrics.recovery)
-                            .staggeredAppear(index: 2)
                         heroRecovery(recovery: metrics.recovery)
-                            .staggeredAppear(index: 3)
                         smallMultiples(hrv: metrics.hrv, rhr: metrics.rhr, strain: metrics.strain)
-                            .staggeredAppear(index: 4)
                         // Long-horizon training load (CTL/ATL/TSB). Uses the FULL history, not the
                         // range window — chronic load is inherently a 42-day horizon. Self-hides its
                         // chart behind an honest "needs N more days" state until enough history exists.
                         TrainingLoadCard(days: repo.days)
-                            .staggeredAppear(index: 5)
                         yearStrip(recoveryDays: metrics.recoveryDays)
-                            .staggeredAppear(index: 6)
                         exportReportRow
-                            .staggeredAppear(index: 7)
                     }
                 }
             }

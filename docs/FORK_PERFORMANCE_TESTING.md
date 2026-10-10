@@ -94,3 +94,37 @@ execution or export. The existing foreground-only capture remains opt-in.
 
 A new iPhone Today/Trends scroll comparison remains required after installing the
 combined build. Raw archives and probes stay in ignored local build directories.
+
+## Follow-up with the 12.1.0 prerelease (build 449)
+
+The archive read on October 10 still contained no build-448 summaries. Its latest
+versioned samples were build 447: Today had 77 windows, about 5.65 sampled minutes,
+2.09% late callbacks and a worst callback interval of 674 ms; Trends had 10 windows,
+about 31 sampled seconds, 1.54% late callbacks and a worst interval of 144.4 ms.
+Both worst windows were beyond the first ten seconds, with nominal thermal state,
+Low Power Mode off and sync inactive. These observations establish remaining stalls;
+they cannot attribute the long interval to a particular function.
+
+The older Instruments capture contains substantial SwiftUI graph and layout work
+near hitches. The follow-up removes specific sources of unnecessary updates:
+
+- Today gathers history-wide results locally and commits them without suspension,
+  preserving the selected day's Rest spark and strap-over-Apple steps precedence.
+  A reduced native SwiftUI probe with twelve staggered async reads evaluated its
+  root body 13 times before batching and twice after, including initial layout.
+  This measures update coalescing, not an iPhone scroll-rate improvement.
+- Heart-rate workout annotations retain content-derived identity, including sport
+  and source so coincident records remain distinct. Vertical iPhone drags do not
+  mutate the chart pan state. Pinch zoom, horizontal pan and hold-to-scrub remain.
+- Trends cards appear directly when materialized by the lazy stack instead of
+  scheduling delayed rise/fade animations while scrolling.
+
+The classic Today sync cue occupies a fixed gray icon slot beside the date (the
+macOS toolbar uses the same cue). The Effort overlay and temporary long Rest caption
+are removed; chunk transitions do not change those layouts. Existing sync debounce,
+recording status and detailed Data Sources progress remain.
+
+No additional capture, data export, dependency or background watcher is introduced.
+An interactive device comparison is still needed to quantify this build's hitch
+reduction. Raw traces and preference copies remain local and must not be attached
+to a public PR; only the reviewed aggregate statistics above are suitable to share.
