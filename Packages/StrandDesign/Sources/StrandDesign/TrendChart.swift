@@ -305,6 +305,22 @@ public struct TrendChart: View {
         return showsBars ? min(0, resolvedYDomain.lowerBound)...resolvedYDomain.upperBound : resolvedYDomain
     }
 
+    @available(iOS 18, macOS 15, *)
+    @ChartContentBuilder
+    private func vectorizedMarks(areaFill: LinearGradient, lineStroke: LinearGradient) -> some ChartContent {
+        if showsArea {
+            AreaPlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
+                     series: .value("Segment", \.segment))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(areaFill)
+        }
+        LinePlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
+                 series: .value("Segment", \.segment))
+            .interpolationMethod(.catmullRom)
+            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            .foregroundStyle(lineStroke)
+    }
+
     public var body: some View {
         // Resolve against current data so the marker and readout never refer to a removed date.
         let currentSelection = selectedPoint.flatMap { selected in points.first { $0.date == selected.date } }
@@ -358,17 +374,7 @@ public struct TrendChart: View {
                 }
             } else {
                 if #available(iOS 18, macOS 15, *) {
-                    if showsArea {
-                        AreaPlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
-                                 series: .value("Segment", \.segment))
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(areaFill)
-                    }
-                    LinePlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
-                             series: .value("Segment", \.segment))
-                        .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(lineStroke)
+                    vectorizedMarks(areaFill: areaFill, lineStroke: lineStroke)
                 } else {
                     if showsArea {
                         ForEach(displayPoints) { p in
