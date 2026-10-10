@@ -357,26 +357,40 @@ public struct TrendChart: View {
                         .foregroundStyle(StrandPalette.textSecondary)
                 }
             } else {
-                if showsArea {
+                if #available(iOS 18, macOS 15, *) {
+                    if showsArea {
+                        AreaPlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
+                                 series: .value("Segment", \.segment))
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(areaFill)
+                    }
+                    LinePlot(displayPoints, x: .value("Date", \.date), y: .value("Value", \.value),
+                             series: .value("Segment", \.segment))
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(lineStroke)
+                } else {
+                    if showsArea {
+                        ForEach(displayPoints) { p in
+                            AreaMark(
+                                x: .value("Date", p.date),
+                                y: .value("Value", p.value),
+                                series: .value("Segment", p.segment)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(areaFill)
+                        }
+                    }
                     ForEach(displayPoints) { p in
-                        AreaMark(
+                        LineMark(
                             x: .value("Date", p.date),
                             y: .value("Value", p.value),
                             series: .value("Segment", p.segment)
                         )
                         .interpolationMethod(.catmullRom)
-                        .foregroundStyle(areaFill)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(lineStroke)
                     }
-                }
-                ForEach(displayPoints) { p in
-                    LineMark(
-                        x: .value("Date", p.date),
-                        y: .value("Value", p.value),
-                        series: .value("Segment", p.segment)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(lineStroke)
                 }
                 // 18pt dots are invisible on dense series (e.g. a 365-day year) but still cost the
                 // GPU a mark each — hide them past a threshold; the line carries the data there. The gate
