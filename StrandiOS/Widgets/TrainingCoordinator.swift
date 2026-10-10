@@ -66,7 +66,9 @@ final class TrainingCoordinator: ObservableObject {
             .sink { [weak self] _ in self?.reconcile() }.store(in: &subscriptions)
         lift.changesSettled.sink { [weak self] _ in self?.reconcile() }.store(in: &subscriptions)
         lift.strapStepTaken.sink { [weak self] _ in self?.publish(alert: true) }.store(in: &subscriptions)
-        model.live.$heartRate.sink { [weak liftActivity] bpm in liftActivity?.updateHeartRate(bpm) }.store(in: &subscriptions)
+        model.live.$heartRate.sink { [weak model, weak liftActivity] bpm in
+            liftActivity?.updateHeartRate(model?.live.connected == true ? (model?.bpm ?? bpm) : nil)
+        }.store(in: &subscriptions)
         model.live.$connected.removeDuplicates().sink { [weak self] connected in
             self?.connectionAvailable = connected
             self?.reconcile()
@@ -302,7 +304,9 @@ final class TrainingCoordinator: ObservableObject {
                 state.restEndsAt = Date(timeIntervalSince1970: Double(endsAt))
             }
             state.training = sessions.first(where: { $0.kind == "lift" }); state.trainingLabels = labels
-            liftActivity.update(state: state, alert: alert, allowBackgroundStart: canStartFromIntent)
+            if let lightUp = liftActivity.update(state: state, alert: alert, allowBackgroundStart: canStartFromIntent) {
+                model.live.append(log: AppModel.stamped(lightUp.logLine))
+            }
         } else { liftActivity.update(state: nil) }
     }
     private func pushWorkout(_ display: TrainingDisplay?) {

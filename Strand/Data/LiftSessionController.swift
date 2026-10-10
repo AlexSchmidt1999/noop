@@ -275,6 +275,7 @@ final class LiftSessionController: ObservableObject {
     /// Rehydrate an interrupted session found on disk. Does NOT present the sheet: the session comes
     /// back as the bottom bar, and the user opens it if they want to.
     func resume(from snapshot: LiftSessionPersistence.Snapshot, present: Bool = false) {
+        lastSession = [:]
         sessionID = snapshot.sessionID ?? "lift-\(snapshot.startSec)"
         pausedForPulseLoss = snapshot.pausedForPulseLoss ?? false
         completedPauses = snapshot.completedPauses ?? []
