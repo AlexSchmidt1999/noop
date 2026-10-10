@@ -29,4 +29,19 @@ final class LiftSessionHistoryLoadingTests: XCTestCase {
         XCTAssertEqual(controller.carry(for: .init(exerciseIndex: 1, setIndex: 1)),
                        LiftSetCarry(weightKg: 15, reps: 12))
     }
+
+    func testStartingWhileActivePresentsTheExistingSessionOnlyWhenRequested() async throws {
+        let controller = LiftSessionController(buzz: { _ in }, setStrapHandler: { _ in })
+        defer { controller.discard() }
+        controller.start(plan: [.init(exercise: "Row")], programId: nil, programName: nil)
+        let id = controller.sessionID
+        let program = LiftProgramRow(id: "other", deviceId: "test", name: "Other", note: nil,
+                                     createdAt: 1, updatedAt: 1, archived: false)
+        controller.isPresented = false
+        try await controller.start(program: program, repo: Repository(deviceId: "test"), present: false)
+        XCTAssertFalse(controller.isPresented)
+        try await controller.start(program: program, repo: Repository(deviceId: "test"))
+        XCTAssertTrue(controller.isPresented)
+        XCTAssertEqual(controller.sessionID, id)
+    }
 }

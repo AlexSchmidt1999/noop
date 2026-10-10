@@ -149,7 +149,7 @@ final class LiftSessionController: ObservableObject {
     }
 
     func start(program: LiftProgramRow, repo: Repository, present: Bool = true) async throws {
-        guard !isActive else { return }
+        guard !isActive else { if present { isPresented = true }; return }
         guard let store = await repo.storeHandle() else { throw CocoaError(.fileReadUnknown) }
         let items = try await store.liftProgramItems(programId: program.id)
         guard !items.isEmpty else { throw CocoaError(.fileReadNoSuchFile) }
@@ -173,7 +173,7 @@ final class LiftSessionController: ObservableObject {
                                 // onto the line it came from, and be there next time.
                                 programItemId: item.id)
         }
-        guard !isActive else { return }
+        guard !isActive else { if present { isPresented = true }; return }
         start(plan: plan, programId: program.id, programName: program.name)
         isPresented = present
         await loadLastSession(repo: repo)
