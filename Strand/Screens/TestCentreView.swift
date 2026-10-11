@@ -894,6 +894,9 @@ private struct TestModeRow: View {
     @ObservedObject var report: TestCentreReport
     @EnvironmentObject var live: LiveState
     @EnvironmentObject var model: AppModel
+    #if os(iOS)
+    @EnvironmentObject var liftSession: LiftSessionController
+    #endif
     @State private var on: Bool = false
 
     private var elapsed: Double? {
@@ -1007,7 +1010,11 @@ private struct TestModeRow: View {
         // CAPTURE-D (#797): wire the data-volume provider so start() emits one `dataVolume` line read STRAIGHT
         // from the store (Repository.dataVolumeSnapshot queries the store, not the @Published caches), so an
         // import-driven-lag report shows the read-set behind the frame stats.
-        DisplayPerformanceMonitor.shared.configure(live: live, repo: model.repo)
+        #if os(iOS)
+        DisplayPerformanceMonitor.shared.configure(model: model, lift: liftSession)
+        #else
+        DisplayPerformanceMonitor.shared.configure(model: model)
+        #endif
         DisplayPerformanceMonitor.shared.start()
     }
 }

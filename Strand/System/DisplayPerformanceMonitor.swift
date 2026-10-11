@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import StrandAnalytics
 #if os(iOS)
 import UIKit
@@ -53,6 +54,18 @@ final class DisplayPerformanceMonitor {
     private var foregroundActive = false
     enum Tab: String { case unknown, today, trends, sleep, coach, more }
     private var tab: Tab = .unknown
+    enum TrainingPhase: String {
+        case none, active, paused
+
+        init(paused: Bool?) {
+            self = paused.map { $0 ? .paused : .active } ?? .none
+        }
+    }
+    private var workoutPhase: TrainingPhase = .none
+    private var liftPhase: TrainingPhase = .none
+    private weak var model: AppModel?
+    private weak var lift: LiftSessionController?
+    private var trainingObservers: [AnyCancellable] = []
     private var dataVolumeTask: Task<Void, Never>?
     private var lastExpectedInterval: CFTimeInterval = 0
     private var windowElapsedMs: Double = 0
@@ -88,7 +101,13 @@ final class DisplayPerformanceMonitor {
     /// True only while a display link is live. The test asserts this is false when the mode is off.
     var isRunning: Bool { running }
 
-    func configure(live: LiveState, repo: Repository) {
+    func configure(model: AppModel, lift: LiftSessionController? = nil) {
+        let restart = running
+        stop()
+        self.model = model
+        self.lift = lift
+        let live = model.live
+        let repo = model.repo
         emit = { [weak self, weak live] line in
             live?.append(log: line, domain: .display)
             // Keep long-running performance captures when verbose strap sync rotates the shared log.
@@ -96,6 +115,7 @@ final class DisplayPerformanceMonitor {
         }
         dataVolumeProvider = { [weak repo] in await repo?.dataVolumeSnapshot() }
         syncActiveProvider = { [weak live] in live?.backfilling == true || live?.historyPendingSync == true }
+        if restart { start() }
     }
 
     var performanceLogText: String { performanceArchive.exportText() }
@@ -116,6 +136,22 @@ final class DisplayPerformanceMonitor {
         tab = value
     }
 
+    private var trainingContext: String {
+        "workout=\(model == nil ? "n/a" : workoutPhase.rawValue) lift=\(lift == nil ? "n/a" : liftPhase.rawValue)"
+    }
+
+    private func setTraining(workout: TrainingPhase, lift: TrainingPhase) {
+        guard workout != workoutPhase || lift != liftPhase else { return }
+        flushWindow()
+        workoutPhase = workout
+        liftPhase = lift
+        if running {
+            emit?(String(format: "trainingPhase elapsed=%.1fs tab=%@ %@",
+                         ProcessInfo.processInfo.systemUptime - captureStartedUptime,
+                         tab.rawValue, trainingContext))
+        }
+    }
+
     // MARK: - Lifecycle (the ONLY place a display link is created / destroyed)
 
     /// Start the monitor: create the platform display link and begin sampling. Idempotent (a second
@@ -133,7 +169,27 @@ final class DisplayPerformanceMonitor {
         memoryPeakMB = 0
         currentMemoryMB = nil
         sampleMemory()
-        emit?("captureStart version=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown") build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown")")
+        workoutPhase = TrainingPhase(paused: model?.activeWorkout?.isPaused)
+        liftPhase = TrainingPhase(paused: lift?.engine.flatMap { $0.isFinished ? nil : $0.isPaused })
+        emit?("captureStart version=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown") build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown") \(trainingContext)")
+        if let model {
+            trainingObservers.append(model.$activeWorkout
+                .map { TrainingPhase(paused: $0?.isPaused) }
+                .removeDuplicates()
+                .sink { [weak self] phase in
+                    guard let self else { return }
+                    self.setTraining(workout: phase, lift: self.liftPhase)
+                })
+        }
+        if let lift {
+            trainingObservers.append(lift.$engine
+                .map { TrainingPhase(paused: $0.flatMap { $0.isFinished ? nil : $0.isPaused }) }
+                .removeDuplicates()
+                .sink { [weak self] phase in
+                    guard let self else { return }
+                    self.setTraining(workout: self.workoutPhase, lift: phase)
+                })
+        }
         emitDeviceMetrics()
         emitDataVolume()
 
@@ -168,6 +224,7 @@ final class DisplayPerformanceMonitor {
     func stop() {
         guard running else { return }
         running = false
+        trainingObservers.removeAll()
         dataVolumeTask?.cancel()
         dataVolumeTask = nil
 
@@ -245,7 +302,8 @@ final class DisplayPerformanceMonitor {
                      cpuLabel, currentMemoryMB.map { String(format: "%.1fMB", $0) } ?? "n/a",
                      ProcessInfo.processInfo.thermalState.rawValue,
                      ProcessInfo.processInfo.isLowPowerModeEnabled ? "true" : "false",
-                     syncActiveProvider.map { $0() ? "true" : "false" } ?? "n/a"))
+                     syncActiveProvider.map { $0() ? "true" : "false" } ?? "n/a")
+            + " " + trainingContext)
         resetWindow()
     }
 

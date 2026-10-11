@@ -160,3 +160,28 @@ publications caused seven body evaluations in every run, including initial layou
 One final publication caused two. This verifies the coalescing behavior, not the
 number of evaluations in production Today or an iPhone scrolling speedup.
 Raw device archives and the synthetic probe remain in ignored local build files.
+
+## Training context in build 453
+
+Display & Performance summaries now include `workout=none|active|paused` and
+`lift=none|active|paused`. The two fields are independent because a sport recording
+and Lift Log can run together. They describe the app's session state, including
+automatic pauses. They do not prove that the wearer was exercising.
+An unavailable session source is reported as `n/a`, including Lift Log in the
+macOS Test Centre, which has no shared Lift session controller.
+
+Starting, pausing, resuming or ending either session flushes the existing frame
+window and writes a `trainingPhase` marker with the foreground capture's elapsed
+time and tab. Ordinary sample and set updates do not split windows. The callback
+interval crossing a phase change belongs to the following phase, as with tab
+changes, so a transition hitch is retained rather than discarded.
+
+Each `captureStart` reads the current sessions, including a paused session restored
+at launch or changes made while the app was in the background. The observers run
+only while capture is running. The existing foreground-only capture, opt-in switch,
+bounded local archive and export path remain in use. These fields contain no
+workout name, session identifier, pulse measurement or set details.
+
+Build 452 does not contain these fields. The next device comparison needs build
+453 with Display & Performance enabled, covering training on Today and Trends
+as well as a few pauses and periods without a training session.

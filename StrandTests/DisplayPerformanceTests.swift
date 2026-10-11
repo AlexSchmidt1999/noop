@@ -160,6 +160,107 @@ final class DisplayPerformanceTests: XCTestCase {
         XCTAssertTrue(captured.contains { $0.contains("lateCallbacks=0") })
     }
 
+    func testWorkoutPhasesSplitWindowsAcrossTodayAndTrends() {
+        withTrainingSources { model, _, monitor in
+            var captured: [String] = []
+            monitor.emit = { captured.append($0) }
+            monitor.setTab(.today)
+            monitor.start()
+            monitor.foldFrame(timestamp: 100, expectedInterval: 1.0 / 60)
+            monitor.foldFrame(timestamp: 100.02, expectedInterval: 1.0 / 60)
+            model.activeWorkout = AppModel.ActiveWorkout(start: Date(timeIntervalSince1970: 100))
+            monitor.foldFrame(timestamp: 100.04, expectedInterval: 1.0 / 60)
+            model.activeWorkout?.avgHr = 150
+            XCTAssertEqual(captured.filter { $0.hasPrefix("trainingPhase ") }.count, 1)
+            monitor.setTab(.trends)
+            monitor.foldFrame(timestamp: 100.06, expectedInterval: 1.0 / 60)
+            model.pauseWorkout(at: Date(timeIntervalSince1970: 101))
+            monitor.foldFrame(timestamp: 100.08, expectedInterval: 1.0 / 60)
+            model.resumeWorkout(at: Date(timeIntervalSince1970: 102))
+            monitor.foldFrame(timestamp: 100.10, expectedInterval: 1.0 / 60)
+            model.activeWorkout = nil
+            monitor.foldFrame(timestamp: 100.12, expectedInterval: 1.0 / 60)
+            monitor.stop()
+
+            let windows = captured.filter { $0.hasPrefix("frameSummary ") }
+            XCTAssertEqual(windows.count, 6)
+            for (line, expected) in zip(windows, ["none", "active", "active", "paused", "active", "none"]) {
+                XCTAssertTrue(line.contains("workout=\(expected) lift=none"), line)
+            }
+            XCTAssertTrue(windows[0].contains("tab=today"))
+            XCTAssertTrue(windows[1].contains("tab=today"))
+            XCTAssertTrue(windows.dropFirst(2).allSatisfy { $0.contains("tab=trends") })
+            XCTAssertEqual(captured.filter { $0.hasPrefix("trainingPhase ") }.count, 4)
+        }
+    }
+
+    func testLiftPhasesAndForegroundRestartReadTheCurrentSession() {
+        withTrainingSources { model, lift, monitor in
+            var captured: [String] = []
+            monitor.emit = { captured.append($0) }
+            model.activeWorkout = AppModel.ActiveWorkout(start: Date())
+            lift.start(plan: [.init(exercise: "Row")], programId: nil, programName: nil)
+            lift.pause()
+            XCTAssertTrue(captured.isEmpty, "training changes emit nothing while capture is stopped")
+            monitor.start()
+            XCTAssertTrue(captured.first?.hasSuffix("workout=active lift=paused") == true)
+            monitor.foldFrame(timestamp: 100, expectedInterval: 1.0 / 60)
+            monitor.foldFrame(timestamp: 100.02, expectedInterval: 1.0 / 60)
+            lift.resume()
+            XCTAssertTrue(captured.contains { $0.hasPrefix("frameSummary ") && $0.hasSuffix("workout=active lift=paused") })
+            monitor.foldFrame(timestamp: 100.22, expectedInterval: 1.0 / 60)
+            lift.finish()
+            XCTAssertTrue(captured.contains { $0.hasPrefix("frameSummary ") && $0.contains("hitches=1") && $0.hasSuffix("workout=active lift=active") })
+            XCTAssertTrue(captured.last?.hasSuffix("workout=active lift=none") == true)
+            monitor.stop()
+
+            let stoppedCount = captured.count
+            model.pauseWorkout()
+            lift.discard()
+            lift.start(plan: [.init(exercise: "Row")], programId: nil, programName: nil)
+            monitor.foldFrame(timestamp: 101, expectedInterval: 1.0 / 60)
+            XCTAssertEqual(captured.count, stoppedCount)
+            monitor.start()
+            XCTAssertTrue(captured.contains { $0.hasPrefix("captureStart ") && $0.hasSuffix("workout=paused lift=active") })
+            monitor.foldFrame(timestamp: 200, expectedInterval: 1.0 / 60)
+            monitor.foldFrame(timestamp: 200.02, expectedInterval: 1.0 / 60)
+            monitor.stop()
+            XCTAssertTrue(captured.contains { $0.hasPrefix("frameSummary ") && $0.hasSuffix("workout=paused lift=active") })
+        }
+    }
+
+    func testMissingLiftSourceDoesNotClaimThereIsNoSession() {
+        withTrainingSources { model, _, monitor in
+            monitor.configure(model: model)
+            var captured: [String] = []
+            monitor.emit = { captured.append($0) }
+            monitor.start()
+            XCTAssertTrue(captured.first?.hasSuffix("workout=none lift=n/a") == true)
+        }
+    }
+
+    private func withTrainingSources(_ check: (AppModel, LiftSessionController, DisplayPerformanceMonitor) -> Void) {
+        let defaults = UserDefaults.standard
+        let keys = [ActiveWorkoutPersistence.defaultsKey, LiftSessionPersistence.defaultsKey]
+        let saved = keys.map { defaults.object(forKey: $0) }
+        let previousModel = AppModel.shared
+        let model = AppModel()
+        model.activeWorkout = nil
+        let lift = LiftSessionController(buzz: { _ in }, setStrapHandler: { _ in })
+        let monitor = DisplayPerformanceMonitor.shared
+        monitor.configure(model: model, lift: lift)
+        defer {
+            monitor.stop()
+            lift.discard()
+            AppModel.shared = previousModel
+            for (key, value) in zip(keys, saved) {
+                if let value { defaults.set(value, forKey: key) }
+                else { defaults.removeObject(forKey: key) }
+            }
+        }
+        check(model, lift, monitor)
+    }
+
     func testStoppedCaptureDoesNotEmitDelayedDataVolume() async {
         let monitor = DisplayPerformanceMonitor.shared
         let captured = LineBox()
