@@ -128,3 +128,35 @@ No additional capture, data export, dependency or background watcher is introduc
 An interactive device comparison is still needed to quantify this build's hitch
 reduction. Raw traces and preference copies remain local and must not be attached
 to a public PR; only the reviewed aggregate statistics above are suitable to share.
+
+## Build 451 usage review (October 11)
+
+The latest local archive contains 69 build-451 summary windows, about 298 sampled
+seconds. Of those, Today accounts for 270 seconds and Trends for only four seconds.
+The following comparison excludes windows overlapping the first ten seconds of
+each foreground capture and includes only windows with sync inactive:
+
+| Today | Build 450 | Build 451 |
+| --- | ---: | ---: |
+| Sampled seconds | 182.02 | 185.10 |
+| Late callbacks, weighted by callback count | 1.87% | 0.74% |
+| Worst callback interval | 517.9 ms | 98.5 ms |
+| Median window p95 | 16.7 ms | 16.7 ms |
+
+Both sets have nominal thermal state and Low Power Mode off. This is ordinary use,
+with different interactions and foreground sessions. It suggests an improvement
+but cannot establish that the training optimization caused it. The new summaries
+do not identify active workouts, and the Trends sample is too short for a useful
+comparison. These are callback intervals, not rendered FPS.
+
+The follow-up moves the selected day's existing UI assignments after its last
+query and cancellation/day check. Previously, six groups of assignments were
+separated by awaits. Rest, provenance, HR, steps, Effort, axis and sleep now commit
+together. Queries, formulas and cache contents stay the same. An overtaken load
+also leaves the displayed state intact instead of publishing partial results.
+
+A reduced native SwiftUI chart probe ran five times in optimized mode. Six staged
+publications caused seven body evaluations in every run, including initial layout.
+One final publication caused two. This verifies the coalescing behavior, not the
+number of evaluations in production Today or an iPhone scrolling speedup.
+Raw device archives and the synthetic probe remain in ignored local build files.
