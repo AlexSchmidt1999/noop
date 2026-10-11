@@ -185,3 +185,44 @@ workout name, session identifier, pulse measurement or set details.
 Build 452 does not contain these fields. The next device comparison needs build
 453 with Display & Performance enabled, covering training on Today and Trends
 as well as a few pauses and periods without a training session.
+
+## App and tab update scope (October 11)
+
+A fresh read of the iPhone archive contains 126 build-453 windows. Excluding windows
+that overlap the first ten seconds of a foreground capture, and selecting Today
+with sync inactive and both training phases `none`, leaves 99 windows: 483.81 sampled
+seconds, 28,958 callbacks, 0.418% late callbacks and a worst interval of 63.0 ms.
+The median window p95 is 16.7 ms, thermal state is nominal and Low Power Mode is off.
+No Trends windows satisfy that selection. These are ordinary-use callback timings
+before the update-scope change, not a controlled scrolling comparison.
+
+Both Apple app entries now retain `AppModel` in native `State`. Screens and live
+leaves still observe the same model through their environment, while a changed
+smoothed pulse or workout sample no longer invalidates the app's entire scene
+builder. The iOS Shortcuts import confirmation separately subscribes to the pending
+import publisher; it still stages before confirmation, imports on acceptance and
+discards on cancellation. Widget and lifecycle subscriptions retain their triggers.
+
+The iOS tab shell receives the same repository as a plain reference because it uses
+only refresh and backup actions, not displayed data. Screen-level repository
+observations remain responsible for new readings. Tab selection, navigation paths
+and the existing refresh actions retain their state and behavior.
+
+A reduced native SwiftUI app probe sends twelve pulse changes through each ownership
+pattern. The observed owner evaluates its scene builder 13 times, while the passive
+owner evaluates it once; the pulse leaf evaluates 13 times in both cases. A separate
+hosted-view probe repeats the result three times and verifies that pending-import
+state still updates independently. These probes establish the removed invalidation
+path, not the number of evaluations in production or an iPhone hitch reduction.
+Raw archives and probes remain in ignored `build/performance/ui-update-oct11/`.
+
+Both Apple Release targets compile. The macOS run passes 63 focused tests,
+including hosted-view checks that pulse leaves keep updating without rebuilding
+their owner, cancellation leaves the store empty, and an import staged before the
+alert mounts is still presented and written only after confirmation. The 338 Tools
+Python tests pass with a canonical temporary path (`TMPDIR=/private/tmp`); the host's
+default `/var` alias otherwise fails four existing `/private/var` path expectations.
+
+This change concerns Apple UI scheduling. It adds no analytics, stored values,
+dependency or strap command. An installed-device comparison remains required to
+quantify the remaining scrolling improvement.
