@@ -226,3 +226,61 @@ default `/var` alias otherwise fails four existing `/private/var` path expectati
 This change concerns Apple UI scheduling. It adds no analytics, stored values,
 dependency or strap command. An installed-device comparison remains required to
 quantify the remaining scrolling improvement.
+
+## Ordinary-use review and day-cycle workload (October 14)
+
+The build-454 archive contains 130 summary windows from 43 foreground captures.
+Every capture starts with workout and Lift Log both `none`. Today accounts for
+204.96 sampled seconds across 61 windows, with a worst callback interval of
+265.7 ms. Trends has 48.20 seconds across 23 windows, with a worst of 220.6 ms.
+Long intervals also occur on Sleep and Coach, so the remaining stalls reach
+beyond either dashboard chart.
+
+Most of these windows overlap the first ten seconds after returning to the app.
+Applying the previous comparison's filters leaves this Today subset:
+
+| Today, no training or sync, after the first ten seconds | Build 453 | Build 454 |
+| --- | ---: | ---: |
+| Windows | 99 | 11 |
+| Sampled seconds | 483.81 | 34.93 |
+| Late callbacks, weighted by callback count | 0.418% | 1.232% |
+| Worst callback interval | 63.0 ms | 159.6 ms |
+| Median window p95 | 16.7 ms | 16.7 ms |
+
+Both subsets have nominal thermal state and Low Power Mode off. The short new
+subset has more late callbacks, but its different interactions and capture lengths
+prevent a controlled regression estimate. These data do not establish an improvement
+from the previous shell change. There is still no matching build-453 Trends subset.
+The build-454 Trends selection contains seven windows and 13.13 sampled seconds.
+
+Retained app logs place long callback windows near foreground rescores. One completed
+pass reports 4.176 seconds elapsed and 4.0 CPU seconds, with 609 ms in its `score2`
+phase. These are whole-phase costs including database waits, not one continuous
+UI-thread pause. Existing Time Profiler samples also contain intelligence-engine
+work on the main thread alongside substantial SwiftUI graph and rendering work.
+
+Code review found a remaining main-thread workload inside that phase:
+`DayCycleIntelligenceIntegration.compute` is main-actor isolated. On a cycle-load
+cache miss, it reads up to 200,000 HR points per owner, merges their timestamps,
+sorts the union and computes Effort and calories. The reads suspend, but the merge,
+sort and scoring previously resumed on the main actor. This also runs without a
+training session and can contend with any visible tab during a foreground rescore.
+
+That existing read-and-score block now runs in a utility-priority detached task.
+Cache access and the result merge remain on the main actor. Owner precedence,
+inclusive read limits, duplicate handling, formulas and stored values stay the same.
+An in-memory integration test uses 80,000 primary samples, conflicting timestamps
+from a second owner and out-of-range points. Its expected Effort and calorie bit
+patterns were recorded before the change for both methods and both sex-specific
+calorie paths. The test also checks cache reuse and invalidation after a new sample.
+
+Local heartbeat measurements varied too much to estimate a hitch reduction.
+The fixed build has not been measured on the iPhone. The existing callback and
+Instruments records cannot attribute every remaining stall to this calculation.
+Raw archives and local checks remain in ignored `build/performance/lag-review-oct14/`.
+
+Both Apple Release targets compile, and 50 focused macOS tests pass. All 338 Tools
+Python checks, source hygiene, translation coverage and source and binary policy
+checks pass. The hosted import tests now create their private store before the app
+model, avoiding a startup-open race in the test fixture. Android is unchanged because
+this moves Apple work between executors without changing calculations or storage.

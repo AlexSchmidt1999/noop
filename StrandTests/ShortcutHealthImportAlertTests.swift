@@ -6,11 +6,12 @@ import WhoopStore
 
 @MainActor
 final class ShortcutHealthImportAlertTests: XCTestCase {
+    // Build each test store before AppModel's startup task can open the default database.
     func testPulsesUpdateTheLeafWithoutRebuildingItsOwnerAndCancelKeepsTheStoreEmpty() async throws {
         let previousModel = AppModel.shared
         defer { AppModel.shared = previousModel }
-        let model = AppModel()
         let store = try await WhoopStore.inMemory()
+        let model = AppModel()
         model.repo.setStoreForTesting(store)
         let counts = Counts()
         let window = host(model, counts: counts)
@@ -38,8 +39,8 @@ final class ShortcutHealthImportAlertTests: XCTestCase {
     func testAlreadyStagedImportIsPresentedAndConfirmationWritesThePreparedPayload() async throws {
         let previousModel = AppModel.shared
         defer { AppModel.shared = previousModel }
-        let model = AppModel()
         let store = try await WhoopStore.inMemory()
+        let model = AppModel()
         model.repo.setStoreForTesting(store)
         model.handleHealthImportURL(importURL)
         let window = host(model, counts: Counts())
@@ -56,7 +57,7 @@ final class ShortcutHealthImportAlertTests: XCTestCase {
             }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
-        XCTFail("The confirmed payload was not imported")
+        XCTFail("The confirmed payload was not imported: \(model.appleHealthImportSummary ?? "no import started")")
     }
 
     private var importURL: URL {
