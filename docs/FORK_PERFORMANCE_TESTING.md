@@ -284,3 +284,23 @@ Python checks, source hygiene, translation coverage and source and binary policy
 checks pass. The hosted import tests now create their private store before the app
 model, avoiding a startup-open race in the test fixture. Android is unchanged because
 this moves Apple work between executors without changing calculations or storage.
+
+## Additional upstream optimizations (build 456, October 16)
+
+The 12.1.0 test branch includes two further upstream contributions, with their
+original authors and tests retained:
+
+- [PR #2724](https://github.com/ryanbr/noop/pull/2724) by @UtkuDenizAltiok computes
+  occupied five-minute resting-HR bins in one pass on Swift and Kotlin. Integer
+  sums, endpoint inclusion, qualifying-bin thresholds, fallback and diagnostics
+  preserve the existing results.
+- [PR #2705](https://github.com/ryanbr/noop/pull/2705) by @kavemang separates the
+  gravity witness's count and maximum into scalar subqueries within one SQLite
+  statement. The maximum can seek the index endpoint while both values share
+  the same snapshot.
+
+An optimized standalone compilation of the previous installed Swift code reproduces
+the twelve committed fixtures and the full-string digest `sweep768|a9770363` used by
+both platforms' tests. The new SQL tests execute both production queries and compare
+their results across 216 device/window cases. The existing foreground performance
+capture can collect ordinary-use timings for build 456 after installation.
