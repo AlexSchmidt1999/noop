@@ -891,7 +891,7 @@ final class AppModel: ObservableObject {
     /// analogue of Android's `persistNonGpsWorkout`. A distance workout records a route as well, and its
     /// fixes are banked separately by `ActiveRouteStore`: keeping them out of here is what lets this stay
     /// a small per-sample write instead of rewriting a growing route on every beat.
-    private func persistActiveWorkout() {
+    func persistActiveWorkout() {
         guard let w = activeWorkout else { return }
         ActiveWorkoutPersistence.store(
             ActiveWorkoutPersistence.Snapshot(
