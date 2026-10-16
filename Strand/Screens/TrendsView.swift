@@ -329,9 +329,7 @@ struct TrendsView: View {
                         // range window — chronic load is inherently a 42-day horizon. Self-hides its
                         // chart behind an honest "needs N more days" state until enough history exists.
                         TrainingLoadCard(days: repo.days)
-                            .staggeredAppear(index: 5)
                         yearStrip(recoveryDays: metrics.recoveryDays)
-                            .staggeredAppear(index: 6)
                         exportReportRow
                             .staggeredAppear(index: 7)
                     }
