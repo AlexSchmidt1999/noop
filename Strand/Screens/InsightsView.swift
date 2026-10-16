@@ -210,7 +210,9 @@ struct InsightsView: View {
 
     var body: some View {
         ScreenScaffold(title: "Insights", subtitle: "Interrogate what affects what.",
-                       // The inner lazy column below builds each section as it enters the viewport.
+                       // PERF (scroll): lazy column, byte-identical layout (LazyVStack == eager VStack
+                       // alignment/spacing/header). The content is one inner eager VStack, so any nested
+                       // staggered reveals are unchanged; this only defers building that stack on scroll-in.
                        lazy: true,
                        // Liquid finish: the same full-bleed day-of-sky backdrop Today + the other liquid
                        // tabs carry, so Insights sits in one atmosphere ("the options change, not the page").
@@ -219,7 +221,7 @@ struct InsightsView: View {
             if !loaded {
                 ComingSoon(what: "Reading your journal and outcomes…")
             } else {
-                LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
+                VStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
                     // v5: a single row into the "What moves you" hub, the lag-aware ranked-effect feed
                     // + alcohol/caffeine dose-response. Reachable as its own destination too; this is the
                     // honest in-Insights entry point.

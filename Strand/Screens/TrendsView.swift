@@ -291,8 +291,7 @@ struct TrendsView: View {
 
     private var scaffold: some View {
         ScreenScaffold(title: "Trends", subtitle: "The thread of you over time.",
-                       // The outer lazy column defers the content, and the inner lazy column below
-                       // defers each chart section as it enters the viewport.
+                       // Defer off-screen charts in the inner column as well as the scaffold.
                        onRefresh: { await repo.refresh() },
                        lazy: true,
                        topBackground: liquidScaffoldSky()) {
@@ -305,7 +304,7 @@ struct TrendsView: View {
                 // An unrelated Repository publication must not re-filter five years of history.
                 let metrics = resolvedMetrics
                 LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
-                    // Lazy charts appear directly instead of starting a layout animation while scrolling.
+                    // Charts enter directly; lazy scrolling must not schedule staggered layout animations.
                     Group {
                         // Week-in-review digest (#208) with prev/next week browsing (#710) — self-hides
                         // only when NO week in history has data. Past weeks render in the same format.

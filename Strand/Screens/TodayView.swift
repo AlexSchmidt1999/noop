@@ -1455,8 +1455,7 @@ struct TodayView: View {
 
     var body: some View {
         ScreenScaffold(title: scaffoldTitle, onRefresh: { await repo.refresh() },
-                       // Keep the scaffold's lazy column; the inner lazy stack below also defers each
-                       // off-screen Today section instead of eagerly constructing the whole dashboard.
+                       // Both columns are lazy so off-screen sections defer chart layout.
                        lazy: true,
                        // PERF (scroll stutter): the day-cycle scene is a static masked Image. CoreAnimation
                        // already caches it as a stable image layer, so it does NOT re-rasterize on body

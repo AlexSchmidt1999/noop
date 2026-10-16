@@ -343,9 +343,7 @@ struct LiquidTodayView: View {
 
                 liquidRefreshIndicator   // grows in the revealed space; a vessel filling with the pull
 
-                // An eager inner stack constructs the entire dashboard even inside a lazy scroll
-                // scaffold. Defer individual sections; keep the pull probe outside so refresh still
-                // observes the top offset before any section has been materialized.
+                // Materialise charts below the viewport only when they approach the visible area.
                 LazyVStack(alignment: .leading, spacing: NoopMetrics.space3) {
                     scene
                     // The strain/illness early-warning banner, dropped in the liquid Home rewrite. Liquid is
