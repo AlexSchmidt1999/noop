@@ -155,7 +155,7 @@ struct StrandiOSApp: App {
             noopDeviceId: model.deviceId
         )
         _health = StateObject(wrappedValue: bridge)
-        DisplayPerformanceMonitor.shared.configure(live: model.live, repo: model.repo)
+        DisplayPerformanceMonitor.shared.configure(model: model, lift: liftSession)
         // Register a separate, always-on-while-authorized refresh task for Apple Health write-back.
         // The operation is write-only and bounded to the bridge's recent window; fresh BLE offloads still
         // use the immediate hook below. BGTaskScheduler chooses the actual wake time.
