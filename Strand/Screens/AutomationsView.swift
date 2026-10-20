@@ -139,23 +139,32 @@ struct AutomationsView: View {
                 if behavior.doubleTapAction == .runShortcut {
                     shortcutField(String(localized: "Shortcut name"), text: $behavior.doubleTapShortcut)
                 }
-                HStack {
-                    Button {
-                        model.runMacAction(behavior.doubleTapAction, shortcut: behavior.doubleTapShortcut)
-                    } label: { Label("Test action", systemImage: "play.fill") }
-                    .buttonStyle(.bordered).tint(StrandPalette.accent)
-                    .disabled(behavior.doubleTapAction == .none)
-                    Spacer()
-                    // Live-observing leaf: re-renders on its own when the strap's bond state flips, so a
-                    // ~1 Hz strap tick doesn't re-render the whole automations column (scroll-stutter
-                    // isolation). Renders byte-for-byte the previous inline pill.
-                    BondStatePill()
+                #if os(iOS)
+                if behavior.doubleTapAction == .countdownTimer {
+                    DoubleTapTimerControls(timer: model.doubleTapTimer, live: model.live)
+                } else {
+                    doubleTapTestRow
                 }
+                #else
+                doubleTapTestRow
+                #endif
                 if !model.moments.isEmpty {
                     rowDivider
                     momentsView
                 }
             }
+        }
+    }
+
+    private var doubleTapTestRow: some View {
+        HStack {
+            Button {
+                model.runMacAction(behavior.doubleTapAction, shortcut: behavior.doubleTapShortcut)
+            } label: { Label("Test action", systemImage: "play.fill") }
+            .buttonStyle(.bordered).tint(StrandPalette.accent)
+            .disabled(behavior.doubleTapAction == .none)
+            Spacer()
+            BondStatePill()
         }
     }
 

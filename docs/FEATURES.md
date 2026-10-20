@@ -196,6 +196,39 @@ buzzes every transition so you never look at the screen.
 With no strap bonded it still works as a large visual timer (without haptics), prompting you to
 bond on the Live screen.
 
+### Double-tap countdown (iPhone, WHOOP 5.0)
+
+Choose **Start timer** under **Automations → Double-tap** once. Every subsequent double-tap starts
+or restarts the selected duration, without opening a timer screen or enabling a session mode.
+
+- Duration: 1–60 minutes in whole minutes, default five; the setting is saved locally.
+- One vibration confirms every start/restart, one warns with 30 seconds remaining,
+  and two signal the end. Restarting replaces the old timer and its pending cues.
+- Automations shows the remaining time and a **Stop** button that cancels pending cues. Editing the
+  duration affects the next start, including a double-tap restart, rather than changing a running timer.
+- The timer belongs to the app, so leaving Automations does not stop it. The selected timer action
+  takes precedence over Lift Log's double-tap handler. Selecting a different action stops the timer.
+- A disconnect or loss of the paired WHOOP channel stops the timer with a visible status; reconnecting
+  does not replay discarded cues. Starting again requires a fresh double-tap or the on-screen button.
+
+The iPhone must remain connected, with NOOP running in the background. A monotonic deadline includes
+device sleep and avoids wall-clock changes; scheduled work runs only for the warning and finish, and incoming
+heart-rate/R-R notifications also check the deadline after a Bluetooth wake. This does not guarantee
+delivery while iOS suspends or terminates NOOP, and force-quitting the app stops the timer. No firmware
+alarm is repurposed. Locked-iPhone timing and the one/two vibration patterns still require validation
+on a physical WHOOP 5.0. Android and macOS timer activation are outside this first version's scope.
+
+Acceptance criteria (all required; physical-device verification is still pending):
+
+| ID | Scenario / action | Expected result | Verification |
+|---|---|---|---|
+| AC-001 | Select the timer action and edit its duration. | Default five minutes; whole minutes from 1–60; the saved duration survives app relaunch. | Bounds unit test and iPhone settings check. |
+| AC-002 | Double-tap a connected, fully paired WHOOP 5.0, including while a timer is running. | Start/restart the full selected duration, request one confirmation buzz, and discard the old timer's cues. | Restart unit test and strap gesture check. |
+| AC-003 | A running timer reaches 30 seconds remaining, then its deadline. | Request one warning buzz and two finish buzzes, each once; never replay an overdue warning after completion. | Cue-sequence/late-wake unit tests and locked-iPhone timing check. |
+| AC-004 | Stop a running timer, change its action, or lose the WHOOP connection. | Cancel pending cues; show stopped/disconnected status; reconnecting does not resume it. | Stop/disconnect unit test and iPhone action-change/reconnect check. |
+| AC-005 | Leave Automations and lock the connected iPhone with NOOP in the background. | The timer remains app-owned and processes its deadlines without a screen-owned tick. | Publication unit test and physical-device background check. |
+| AC-006 | Select the timer during Lift Log, or try starting without a paired WHOOP 5.0. | The selected timer owns the gesture; unavailable hardware cannot start a timer or receive its cues. | iPhone integration check. |
+
 ---
 
 ## Explore (Metric Explorer)

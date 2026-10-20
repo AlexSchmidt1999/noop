@@ -62,6 +62,15 @@ final class AppModel: ObservableObject {
     let profile = ProfileStore()
     /// Behaviour settings: double-tap action, wear automation, zone coaching, smart alarm, illness watch.
     let behavior = BehaviorStore()
+    #if os(iOS)
+    var canStartDoubleTapTimer: Bool {
+        live.connected && live.encryptedBond && live.activeIsWhoop && ble.isWhoop5
+    }
+
+    lazy var doubleTapTimer = DoubleTapTimer(
+        buzz: { [weak self] loops in self?.buzz(loops: loops) },
+        log: { [weak self] line in self?.live.append(log: Self.stamped(line)) })
+    #endif
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
 
@@ -318,12 +327,28 @@ final class AppModel: ObservableObject {
         // heart rate (a disconnect, the strap off the wrist) found the old values still there and kept the median.
         live.$heartRate.sink { [weak self] hr in
             guard let self else { return }
+            #if os(iOS)
+            self.doubleTapTimer.advance()
+            #endif
             self.ingestHR(heartRate: hr, rr: self.live.rr)
         }.store(in: &hrCancellables)
         live.$rr.sink { [weak self] rr in
             guard let self else { return }
+            #if os(iOS)
+            self.doubleTapTimer.advance()
+            #endif
             self.ingestHR(heartRate: self.live.heartRate, rr: rr)
         }.store(in: &hrCancellables)
+
+        #if os(iOS)
+        Publishers.CombineLatest3(live.$connected, live.$encryptedBond, live.$activeIsWhoop)
+            .sink { [weak self] connected, bonded, whoop in
+                if !connected || !bonded || !whoop { self?.doubleTapTimer.stop(disconnected: true) }
+            }.store(in: &hrCancellables)
+        behavior.$doubleTapAction.dropFirst().sink { [weak self] action in
+            if action != .countdownTimer { self?.doubleTapTimer.stop() }
+        }.store(in: &hrCancellables)
+        #endif
 
         // #2117: bank the device's R-R transport facts whenever a link comes up. Shell-independent on
         // purpose: the classic Today already reads these three for its own note, but the Liquid shell is
@@ -1837,8 +1862,8 @@ final class AppModel: ObservableObject {
     // MARK: - Physical inputs / wear automation
 
     /// Set by a running Lift Log session to CLAIM the strap's double-tap for the duration of that
-    /// session, so a set can be logged without picking the phone up — the one cue that works with the
-    /// phone face-down on a bench. Cleared when the session ends, handing the gesture straight back to
+    /// session, unless the iOS timer action is selected. A set can be logged with the phone face-down on
+    /// a bench. Cleared when the session ends, handing the gesture straight back to
     /// whatever the user has configured; nothing about their setting is read or written.
     ///
     /// A double tap rather than a single one because a strap takes knocks against bars and benches all
@@ -1853,6 +1878,13 @@ final class AppModel: ObservableObject {
             return
         }
         lastDoubleTapAt = now
+        #if os(iOS)
+        // An explicitly selected timer owns the gesture even while Lift Log has a session open.
+        if behavior.doubleTapAction == .countdownTimer {
+            runMacAction(.countdownTimer, shortcut: "")
+            return
+        }
+        #endif
         if let override = strapDoubleTapOverride {
             live.append(log: Self.stamped("Double-tap → Lift Log: next"))
             override()
@@ -1878,6 +1910,16 @@ final class AppModel: ObservableObject {
         case .markMoment: markMoment()
         case .sleepMark: markSleep()
         case .hapticClock: ble.buzzTimeNow(is24h: Self.localeUses24HourClock)
+        #if os(iOS)
+        case .countdownTimer:
+            guard canStartDoubleTapTimer else {
+                live.append(log: Self.stamped("Double-tap timer: not started; requires a connected, fully paired WHOOP 5.0"))
+                return
+            }
+            let minutes = UserDefaults.standard.object(forKey: DoubleTapTimer.minutesKey) as? Int
+                ?? DoubleTapTimer.defaultMinutes
+            doubleTapTimer.start(minutes: minutes)
+        #endif
         case .runShortcut: MacActions.runShortcut(shortcut)
         }
     }
