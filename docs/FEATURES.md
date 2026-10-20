@@ -219,7 +219,7 @@ delivery while iOS suspends or terminates NOOP, and force-quitting the app stops
 alarm is repurposed. Locked-iPhone timing and the one/two vibration patterns still require validation
 on a physical WHOOP 5.0. Android and macOS timer activation are outside this first version's scope.
 
-Acceptance criteria (all required; physical-device verification is still pending):
+Acceptance criteria (all required; remaining physical-device checks are listed below):
 
 | ID | Scenario / action | Expected result | Verification |
 |---|---|---|---|
@@ -229,6 +229,14 @@ Acceptance criteria (all required; physical-device verification is still pending
 | AC-004 | Stop a running timer, change its action, or lose the WHOOP connection. | Cancel pending cues; show stopped/disconnected status; reconnecting does not resume it. | Stop/disconnect unit test and iPhone action-change/reconnect check. |
 | AC-005 | Leave Automations and lock the connected iPhone with NOOP in the background. | The timer remains app-owned and processes its deadlines without a screen-owned tick. | Publication unit test and physical-device background check. |
 | AC-006 | Select the timer during Lift Log, or try starting without a paired WHOOP 5.0. | The selected timer owns the gesture; unavailable hardware cannot start a timer or receive its cues. | iPhone integration check. |
+
+Local device check, 2026-10-20, build 457: the user confirmed a successful five-minute run with the
+iPhone locked. The strap log records the warning at 30 seconds remaining and the finish request
+with `background=true`; the finish request was 0.075 seconds late. The iPhone was still locked when
+checked after the run. The start record reports `background=false` (foreground or inactive), so this
+log does not independently establish a background double-tap start. Background restart, stop,
+disconnect/reconnect, and Lift Log priority still require device checks. This is one successful run,
+not a guarantee after force-quit or system termination.
 
 ---
 
