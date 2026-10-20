@@ -7,6 +7,7 @@ import StrandImport
 import OuraProtocol
 #if os(iOS)
 import UserNotifications
+import UIKit
 #endif
 
 /// Data source currently running an import from the Data Sources screen.
@@ -69,7 +70,10 @@ final class AppModel: ObservableObject {
 
     lazy var doubleTapTimer = DoubleTapTimer(
         buzz: { [weak self] loops in self?.buzz(loops: loops) },
-        log: { [weak self] line in self?.live.append(log: Self.stamped(line)) })
+        log: { [weak self] line in
+            let background = UIApplication.shared.applicationState == .background
+            self?.live.append(log: Self.stamped("\(line) [background=\(background)]"))
+        })
     #endif
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
@@ -327,16 +331,10 @@ final class AppModel: ObservableObject {
         // heart rate (a disconnect, the strap off the wrist) found the old values still there and kept the median.
         live.$heartRate.sink { [weak self] hr in
             guard let self else { return }
-            #if os(iOS)
-            self.doubleTapTimer.advance()
-            #endif
             self.ingestHR(heartRate: hr, rr: self.live.rr)
         }.store(in: &hrCancellables)
         live.$rr.sink { [weak self] rr in
             guard let self else { return }
-            #if os(iOS)
-            self.doubleTapTimer.advance()
-            #endif
             self.ingestHR(heartRate: self.live.heartRate, rr: rr)
         }.store(in: &hrCancellables)
 

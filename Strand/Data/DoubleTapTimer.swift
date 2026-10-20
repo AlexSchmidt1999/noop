@@ -63,7 +63,7 @@ final class DoubleTapTimer: ObservableObject {
             cues?.cancel()
             cues = nil
             buzz(2)
-            log("Double-tap timer: elapsed; finish cue requested")
+            log("Double-tap timer: elapsed; finish cue requested (late by \(end.duration(to: now)))")
         } else if !warned, now.duration(to: end) <= .seconds(30) {
             warned = true
             buzz(1)

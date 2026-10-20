@@ -213,7 +213,8 @@ or restarts the selected duration, without opening a timer screen or enabling a 
 
 The iPhone must remain connected, with NOOP running in the background. A monotonic deadline includes
 device sleep and avoids wall-clock changes; scheduled work runs only for the warning and finish, and incoming
-heart-rate/R-R notifications also check the deadline after a Bluetooth wake. This does not guarantee
+readable heart-rate packet receipts also check the deadline after a Bluetooth wake, including when
+bpm stays unchanged and no R-R intervals are published. This does not guarantee
 delivery while iOS suspends or terminates NOOP, and force-quitting the app stops the timer. No firmware
 alarm is repurposed. Locked-iPhone timing and the one/two vibration patterns still require validation
 on a physical WHOOP 5.0. Android and macOS timer activation are outside this first version's scope.

@@ -102,4 +102,26 @@ final class DoubleTapTimerTests: XCTestCase {
         XCTAssertEqual(changes, 1)
         subscription.cancel()
     }
+
+    func testPulseReceiptsAdvanceWithConstantBpmAndNoRRPublication() {
+        let live = LiveState()
+        live.heartRate = 60
+        var buzzes: [UInt8] = []
+        let timer = DoubleTapTimer(buzz: { buzzes.append($0) })
+        let start = ContinuousClock.now
+        var now = start
+        live.onReadableHeartRate = { _ in timer.advance(now: now) }
+        var publications = 0
+        let subscription = live.objectWillChange.sink { publications += 1 }
+        timer.start(minutes: 1, now: start)
+        now = start.advanced(by: .seconds(30))
+        live.noteReadableHeartRate()
+        now = start.advanced(by: .seconds(60))
+        live.noteReadableHeartRate()
+        XCTAssertEqual(buzzes, [1, 1, 2])
+        XCTAssertEqual(publications, 0)
+        XCTAssertEqual(live.heartRate, 60)
+        XCTAssertTrue(live.rr.isEmpty)
+        subscription.cancel()
+    }
 }

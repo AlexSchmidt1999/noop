@@ -101,6 +101,8 @@ final class TrainingCoordinator: ObservableObject {
     }
 
     private func receivedPulse(at date: Date) {
+        // Receipt still arrives when bpm is unchanged and there are no R-R values to publish.
+        model.doubleTapTimer.advance()
         let now = Int(date.timeIntervalSince1970)
         // An accepted live packet proves a link even if its connection publication arrives later.
         connectionAvailable = true
