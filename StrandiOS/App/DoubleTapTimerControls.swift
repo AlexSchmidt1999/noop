@@ -8,10 +8,6 @@ struct DoubleTapTimerControls: View {
     @ObservedObject var live: LiveState
     @AppStorage(DoubleTapTimer.minutesKey) private var minutes = DoubleTapTimer.defaultMinutes
 
-    private var ready: Bool {
-        model.canStartDoubleTapTimer
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             Stepper(value: $minutes, in: DoubleTapTimer.minutesRange) {
@@ -28,7 +24,7 @@ struct DoubleTapTimerControls: View {
             Text("Keep NOOP running in the background and WHOOP connected. Signals may be delayed if iOS suspends NOOP. This action takes priority over Lift Log.")
                 .font(StrandFont.footnote).foregroundStyle(StrandPalette.textSecondary)
 
-            if !ready {
+            if !model.canStartDoubleTapTimer {
                 Text("Connect and fully pair a WHOOP 5.0 to use this timer.")
                     .font(StrandFont.footnote).foregroundStyle(StrandPalette.statusWarning)
             }
@@ -56,7 +52,7 @@ struct DoubleTapTimerControls: View {
 
             HStack(spacing: NoopMetrics.gap) {
                 Button("Start timer") { model.runMacAction(.countdownTimer, shortcut: "") }
-                    .disabled(!ready)
+                    .disabled(!model.canStartDoubleTapTimer)
                 Button("Stop") { timer.stop() }
                     .disabled(timer.remaining() == nil)
             }

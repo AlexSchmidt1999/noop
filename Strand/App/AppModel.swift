@@ -1878,12 +1878,11 @@ final class AppModel: ObservableObject {
         lastDoubleTapAt = now
         #if os(iOS)
         // An explicitly selected timer owns the gesture even while Lift Log has a session open.
-        if behavior.doubleTapAction == .countdownTimer {
-            runMacAction(.countdownTimer, shortcut: "")
-            return
-        }
+        let override = behavior.doubleTapAction == .countdownTimer ? nil : strapDoubleTapOverride
+        #else
+        let override = strapDoubleTapOverride
         #endif
-        if let override = strapDoubleTapOverride {
+        if let override {
             live.append(log: Self.stamped("Double-tap → Lift Log: next"))
             override()
             return

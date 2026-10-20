@@ -39,12 +39,11 @@ final class DoubleTapTimer: ObservableObject {
         // shortcut: iOS may suspend scheduled work; BLE notifications also advance the timer. Verify on a locked iPhone.
         cues = Task { [weak self] in
             do {
-                try await ContinuousClock().sleep(until: end.advanced(by: .seconds(-30)))
-                guard !Task.isCancelled else { return }
-                self?.advance()
-                try await ContinuousClock().sleep(until: end)
-                guard !Task.isCancelled else { return }
-                self?.advance()
+                for deadline in [end.advanced(by: .seconds(-30)), end] {
+                    try await ContinuousClock().sleep(until: deadline)
+                    try Task.checkCancellation()
+                    self?.advance()
+                }
             } catch { } // Cancellation discards the old timer's cues on restart or stop.
         }
     }
