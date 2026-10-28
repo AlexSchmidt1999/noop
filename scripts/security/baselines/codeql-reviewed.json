@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "findings": [
+    {
+      "id": "local-auxiliary-samples",
+      "rule": "swift/cleartext-storage-database",
+      "file": "Packages/WhoopStore/Sources/WhoopStore/StreamStore.swift",
+      "line": 497,
+      "reason": "The owner accepted existing local SQLite storage under the platform protections described in docs/PRIVACY_SECURITY.md section 2.2.",
+      "fingerprint": "5b70fff9deb6409f76f0d1cc0acffbd97c39081b34b19123e59c7f9fe7c66d0b",
+      "source_sha256": {
+        "Packages/WhoopProtocol/Sources/WhoopProtocol/Streams.swift": "45a54c1181bd9ecb963311ce44f8f8cace3a766ec8b20c4370999bf889f14c6f",
+        "Packages/WhoopStore/Sources/WhoopStore/StreamStore.swift": "728ba3dbd6013436a9f972dfb5e0b4f60b9634a2293e774c14788389dc0cc663",
+        "Packages/WhoopStore/Sources/WhoopStore/V18Aux.swift": "ecd0a5c35ceb2fed2e4fad4a81c31cbeeb2bace70d34a6eab0f6b59367306957"
+      }
+    },
+    {
+      "id": "local-alarm-heart-rate",
+      "rule": "swift/cleartext-storage-preferences",
+      "file": "Strand/BLE/BLEManager.swift",
+      "line": 5549,
+      "reason": "The owner accepted the existing local alarm diagnostic preference, which stores the last arm-time heart rate.",
+      "fingerprint": "6fe99d37da46c5e101ce6b0d96fc60df2a88dc6d32257a8d417b6ff9d9393bbc",
+      "source_sha256": {
+        "Strand/BLE/BLEManager.swift": "cae9a5f15c04014f783b921920e24442064b9d909e54edb2570d0e6103ea05fd"
+      }
+    },
+    {
+      "id": "local-resolved-birth-date",
+      "rule": "swift/cleartext-storage-preferences",
+      "file": "Strand/Data/Profile.swift",
+      "line": 122,
+      "reason": "The owner accepted the existing local profile date-of-birth preference.",
+      "fingerprint": "29f44743f9a0a38182fa834fbc6cab31023d9b232ff6958210d4016c13fbeecd",
+      "source_sha256": {
+        "Strand/Data/Profile.swift": "f43c183dc4176db3c9e36cf6bf1a44f0088c128974e73ddf7b0b9e85901657b9"
+      }
+    },
+    {
+      "id": "local-profile-sex",
+      "rule": "swift/cleartext-storage-preferences",
+      "file": "Strand/Data/Profile.swift",
+      "line": 22,
+      "reason": "The owner accepted the existing local sex-specific profile preference.",
+      "fingerprint": "8c6f06c209ee0eaa8fa742f76450408107e2f4a33b6bb47c224c5a8343f2cd76",
+      "source_sha256": {
+        "Strand/Data/Profile.swift": "f43c183dc4176db3c9e36cf6bf1a44f0088c128974e73ddf7b0b9e85901657b9"
+      }
+    },
+    {
+      "id": "local-profile-birth-date",
+      "rule": "swift/cleartext-storage-preferences",
+      "file": "Strand/Data/Profile.swift",
+      "line": 14,
+      "reason": "The owner accepted the existing local date-of-birth profile preference.",
+      "fingerprint": "3cb040e59a1a03ccf638477703a17df05a162bb2366f010d7fa2418bf2500c67",
+      "source_sha256": {
+        "Strand/Data/Profile.swift": "f43c183dc4176db3c9e36cf6bf1a44f0088c128974e73ddf7b0b9e85901657b9"
+      }
+    },
+    {
+      "id": "fixed-silence-timeout",
+      "rule": "swift/cleartext-logging",
+      "file": "Strand/BLE/LiveState.swift",
+      "line": 826,
+      "reason": "The reported source is the fixed ten-second heartRateSilence timeout, not a measured heart rate.",
+      "fingerprint": "c40056aacdf18a09c86a70d2cbe2815d0d79dc3e0c6da7d60e04290649a65a19",
+      "source_sha256": {
+        "Strand/App/AppModel.swift": "25d04f70ecd49cbbf97863a9658c0faa8d31abc6d3061e7b554968bc8a2531a2",
+        "Strand/BLE/LiveState.swift": "fa5db0bf621b03df5b4ebe793b25906c72940193476faf9530a949fad969025d"
+      }
+    }
+  ]
+}

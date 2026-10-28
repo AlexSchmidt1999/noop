@@ -241,7 +241,7 @@ jobs:
           output: build/security/codeql
           upload: never
       - name: Enforce serious CodeQL finding policy
-        run: python3 scripts/security/sarif_gate.py build/security/codeql --report build/security/codeql-gate.json
+        run: python3 scripts/security/sarif_gate.py build/security/codeql --report build/security/codeql-gate.json --reviewed-findings scripts/security/baselines/codeql-reviewed.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -313,7 +313,7 @@ jobs:
               ('Source capabilities, endpoints, scripts, dependencies and Dependency Review', os.environ['SOURCE'], source_detail),
               ('Gitleaks history', os.environ['SECRETS'], f'{count(secrets)} findings'),
               ('mobsfscan Swift/iOS', os.environ['STATIC'], f'{count(static["serious_findings"] if static else None)} serious findings'),
-              ('CodeQL Swift', os.environ['CODEQL'], f'{count(codeql["serious_findings"] if codeql else None)} serious findings'),
+              ('CodeQL Swift', os.environ['CODEQL'], f'{count(codeql["serious_findings"] if codeql else None)} unreviewed serious findings; {count(codeql.get("reviewed_findings", []) if codeql else None)} reviewed'),
               ('Unsigned app and binary policy', os.environ['BUILD'], f'{count(binary["failures"] if binary else None)} policy failures'),
           ]
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:

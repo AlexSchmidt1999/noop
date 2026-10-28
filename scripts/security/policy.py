@@ -101,7 +101,7 @@ def script_inventory(paths):
     result = {}
     for path in paths:
         p = Path(path)
-        if path in {"project.yml", ".gitleaksignore", ".github/CODEOWNERS", ".github/dependabot.yml"} or path.startswith(".github/workflows/") or p.suffix in SCRIPT_EXTS or os.access(ROOT / path, os.X_OK) and p.suffix not in {".swift", ".kt"}:
+        if path in {"project.yml", ".gitleaksignore", ".github/CODEOWNERS", ".github/dependabot.yml", "scripts/security/baselines/codeql-reviewed.json"} or path.startswith(".github/workflows/") or p.suffix in SCRIPT_EXTS or os.access(ROOT / path, os.X_OK) and p.suffix not in {".swift", ".kt"}:
             result[path] = sha(path)
     return result
 
