@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail on serious CodeQL SARIF findings; parse scanner output locally."""
+"""Fail on serious SARIF findings; parse scanner output locally."""
 import argparse
 import json
 import sys
@@ -10,9 +10,8 @@ def severity(result, rules):
     rule = rules.get(result.get("ruleId"), {})
     props = rule.get("properties", {})
     score = props.get("security-severity")
-    if score is not None:
-        return float(score) >= 7.0
-    return result.get("level") == "error"
+    level = result.get("level", rule.get("defaultConfiguration", {}).get("level"))
+    return (score is not None and float(score) >= 7.0) or level == "error"
 
 
 def main():
@@ -27,14 +26,16 @@ def main():
     for path in paths:
         data = json.loads(path.read_text())
         for run in data.get("runs", []):
-            rules = {r.get("id"): r for r in run.get("tool", {}).get("driver", {}).get("rules", [])}
+            tool = run.get("tool", {})
+            components = [tool.get("driver", {}), *tool.get("extensions", [])]
+            rules = {r.get("id"): r for component in components for r in component.get("rules", [])}
             for result in run.get("results", []):
                 if severity(result, rules):
                     loc = result.get("locations", [{}])[0].get("physicalLocation", {})
                     hits.append({"rule": result.get("ruleId"), "file": loc.get("artifactLocation", {}).get("uri"), "line": loc.get("region", {}).get("startLine")})
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps({"status": "FAIL" if hits else "PASS", "serious_findings": hits}, indent=2) + "\n")
-    print(f"CodeQL: {len(hits)} HIGH/CRITICAL or error findings")
+    print(f"SARIF: {len(hits)} HIGH/CRITICAL or error findings")
     if hits:
         raise SystemExit(1)
 
