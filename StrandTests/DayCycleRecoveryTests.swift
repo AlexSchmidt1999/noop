@@ -150,12 +150,12 @@ final class DayCycleRecoveryTests: XCTestCase {
         let duplicates = stride(from: 0, through: 80_000, by: 2).map { HRSample(ts: onset + $0, bpm: 190) }
         _ = try await store.insert(Streams(hr: duplicates + [HRSample(ts: onset - 1, bpm: 200),
                                                            HRSample(ts: now, bpm: 200)]), deviceId: "canonical")
-        // Bit patterns recorded from this fixture before moving the existing work off the main actor.
+        // Pre-scheduling bit patterns; female Banister independently recomputed for upstream #2835.
         let expected: [String: (strain: UInt64, calories: UInt64)] = [
             "male-edwards": (4_634_812_706_201_377_178, 4_663_630_262_385_791_330),
             "male-banister": (4_635_039_997_245_071_032, 4_663_630_262_385_791_330),
             "female-edwards": (4_634_812_706_201_377_178, 4_662_157_254_104_897_468),
-            "female-banister": (4_635_082_218_491_577_631, 4_662_157_254_104_897_468)
+            "female-banister": (4_635_137_809_799_477_985, 4_662_157_254_104_897_468)
         ]
         for sex in ["male", "female"] {
             for method in [StrainScorer.Method.edwards, .banister] {
