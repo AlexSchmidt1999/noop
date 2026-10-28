@@ -684,8 +684,9 @@
     "scripts/security/mobsf_binary_gate.py": "bb6d32917f9e2bddcac4bf78972ef88c6f77d7acf53b1f0e15c1e9aa25e8a2fc",
     "scripts/security/policy.py": "00fb5d1f5da3bc9338997db868f2fbc200c7b5c1d6eba90616cd6c9957117412",
     "scripts/security/run-all.sh": "cec85fcd3b19b762590df3c5161029f7a17359a064884b05a03ee4846d6ee7ff",
-    "scripts/security/sarif_gate.py": "72105e91a961c19cc20036c4170a5401169282c097957cc9659148adf6d01d2d",
+    "scripts/security/sarif_gate.py": "86748729e996875e12b317e4fd1d0259792957f815a535718e5e9f229dda3a40",
     "scripts/security/test_auto_update.py": "c6d39c325e0efac44f3f2ec5712cb304d6f43475fe36ac765e129c38a6d06a1d",
+    "scripts/security/test_sarif_gate.py": "80a37be9b90a498fe4352ddeaf14cc955e08f17f03ff6a9c45b57a619e5b13e4",
     "scripts/security/update-noop-background.sh": "9a7782d295f596859ab66da71cdb935cb3e8e15435ee99725b5b2521625d5718"
   }
 }
