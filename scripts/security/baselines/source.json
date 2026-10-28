@@ -269,10 +269,10 @@
         "Tools/update-homebrew-cask.sh:18"
       ],
       "127.0.0.1": [
-        ".github/workflows/noop-security.yml:362",
-        ".github/workflows/noop-security.yml:368",
-        ".github/workflows/noop-security.yml:375",
-        ".github/workflows/noop-security.yml:379"
+        ".github/workflows/noop-security.yml:363",
+        ".github/workflows/noop-security.yml:369",
+        ".github/workflows/noop-security.yml:376",
+        ".github/workflows/noop-security.yml:380"
       ],
       "192.168.x.x": [
         "project.yml:315"
@@ -591,7 +591,7 @@
     ".github/workflows/fork-release.yml": "9b0018a14ca6b4b00b97c17bb3be27a04d45e3b96b9e00055ceb68a682a45d55",
     ".github/workflows/fork-testing-build.yml": "6177f4bc67d7ef97daac2d25e8e573fb3c9a5c18f2bad76aae3f320a753f6a9d",
     ".github/workflows/i18n-coverage.yml": "99096a08d723c3882559a5b6ee3ea2cfd7a990b9a01f847b234589d58eda44dd",
-    ".github/workflows/noop-security.yml": "89bb36c13e1e03720c830389e725d98305757a224003321b05778a1ced50b527",
+    ".github/workflows/noop-security.yml": "6eea9b571461991b4f4e36c8bb9d6709db5fe4fd6ec53be8e467cc702036d6d8",
     ".github/workflows/noop-upstream-release.yml": "7567b1c7acfa341184564cac27871224c79e9e139f30c3eadcfaa163e9299fae",
     ".github/workflows/parity-governance.yml": "43eba17282a2efb7976516115ba76cb278bcf8ec0b15ca96fbf37d8051d66393",
     ".github/workflows/prune-stale-branches.yml": "598bd662a0172730c17e33898ced4dce6ef5d38f4eadff6d147bb6363d36cfc2",
