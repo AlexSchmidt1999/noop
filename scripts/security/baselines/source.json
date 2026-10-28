@@ -591,7 +591,7 @@
     ".github/workflows/fork-release.yml": "9b0018a14ca6b4b00b97c17bb3be27a04d45e3b96b9e00055ceb68a682a45d55",
     ".github/workflows/fork-testing-build.yml": "6177f4bc67d7ef97daac2d25e8e573fb3c9a5c18f2bad76aae3f320a753f6a9d",
     ".github/workflows/i18n-coverage.yml": "99096a08d723c3882559a5b6ee3ea2cfd7a990b9a01f847b234589d58eda44dd",
-    ".github/workflows/noop-security.yml": "6eea9b571461991b4f4e36c8bb9d6709db5fe4fd6ec53be8e467cc702036d6d8",
+    ".github/workflows/noop-security.yml": "de494ddf681971e7f32d86c63466e5dc2aa437e331efcd6ea2ffd2e38e2e1209",
     ".github/workflows/noop-upstream-release.yml": "7567b1c7acfa341184564cac27871224c79e9e139f30c3eadcfaa163e9299fae",
     ".github/workflows/parity-governance.yml": "43eba17282a2efb7976516115ba76cb278bcf8ec0b15ca96fbf37d8051d66393",
     ".github/workflows/prune-stale-branches.yml": "598bd662a0172730c17e33898ced4dce6ef5d38f4eadff6d147bb6363d36cfc2",
@@ -678,15 +678,16 @@
     "docs/protocol-examples/validate_examples.py": "c94878750e993523d23883934fe81b393f8de3b349f37ef4e5fc34107acbceb5",
     "project.yml": "5e595b83bef271fadf737c85f25a44b1526939dd1b704c062a626e1a2fe63e97",
     "scripts/security/auto_update.py": "514a480ad272c1159bca0bd2dee76fb15cc9ae57f6426169c9b0348afca48478",
+    "scripts/security/baselines/codeql-reviewed.json": "77d6c1775d65657c7b5d6a74db950c504f739897f0e7e08268641c9bdaca8a3c",
     "scripts/security/binary.py": "d7f5a39aa0e9745c4ce31b7df103b0361461eb52a695a8031c69644ef2ec1e41",
     "scripts/security/enable-background-install.py": "1847a9a4bcca0b9e069b5196878aa0227ad4a3131db87958d53e68248b13d0e2",
     "scripts/security/install-analyzed-ios.py": "3e3364ab71ae9b3edf453f3ebf1bd59de63c603f2d43c64e7caa28d2f735b18a",
     "scripts/security/mobsf_binary_gate.py": "bb6d32917f9e2bddcac4bf78972ef88c6f77d7acf53b1f0e15c1e9aa25e8a2fc",
-    "scripts/security/policy.py": "00fb5d1f5da3bc9338997db868f2fbc200c7b5c1d6eba90616cd6c9957117412",
+    "scripts/security/policy.py": "5fb96b889f8a4c74d6b4b7f8af8450c7385604e5c3dc3de5ad88a753a8de44af",
     "scripts/security/run-all.sh": "cec85fcd3b19b762590df3c5161029f7a17359a064884b05a03ee4846d6ee7ff",
-    "scripts/security/sarif_gate.py": "86748729e996875e12b317e4fd1d0259792957f815a535718e5e9f229dda3a40",
+    "scripts/security/sarif_gate.py": "2c8d6c07011b196374c58467a9f5046a1b67bfd36cc5b6988cdf0434aa418d6d",
     "scripts/security/test_auto_update.py": "c6d39c325e0efac44f3f2ec5712cb304d6f43475fe36ac765e129c38a6d06a1d",
-    "scripts/security/test_sarif_gate.py": "80a37be9b90a498fe4352ddeaf14cc955e08f17f03ff6a9c45b57a619e5b13e4",
+    "scripts/security/test_sarif_gate.py": "64fbfcb2ceb2203d61d96b876e4070d8448f625ca8b818666301d697cdb3e114",
     "scripts/security/update-noop-background.sh": "9a7782d295f596859ab66da71cdb935cb3e8e15435ee99725b5b2521625d5718"
   }
 }
