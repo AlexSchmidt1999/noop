@@ -26,6 +26,7 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
+          python3 -m unittest discover -s scripts/security
           if [[ -n "$BASE_REF" ]]; then
             python3 scripts/security/policy.py check --report build/security/source-policy.json --base-ref "$BASE_REF"
           else
