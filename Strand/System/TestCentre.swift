@@ -2,19 +2,17 @@ import Foundation
 import StrandAnalytics
 
 /// The Test Centre orchestration surface: per-domain activation, a SINGLE consolidated prefs namespace,
-/// and a one-time read-through migration that gathers the scattered legacy keys behind one accessor
-/// WITHOUT renaming them (spec section 10). `active(_:)` is the zero-cost gate engines check before
+/// preserving legacy experimental settings in their original namespaces (spec section 10).
+/// `active(_:)` is the zero-cost gate engines check before
 /// emitting a tagged line, so an emitter on the GATT/analytics queue pays one Bool read when a mode is
 /// off. The Kotlin twin is TestCentre.kt, backed by a single "noop_testcentre" SharedPreferences file.
 public enum TestCentre {
 
-    // SINGLE namespace for all NEW Test Centre flags. The migrated LEGACY keys keep their original
-    // names (see migrate()), so no user loses a setting.
+    // Single namespace for new Test Centre flags; legacy keys keep their original names.
     private static let activePrefix = "testcentre.active."          // + domain.id  -> Bool
     private static let startedPrefix = "testcentre.startedAt."      // + domain.id  -> Double (unix)
     private static let guidedTargetPrefix = "testcentre.target."    // + domain.id  -> Int (nights/days)
     private static let answersPrefix = "testcentre.answers."        // + domain.id  -> [String:String] (Data)
-    private static let migratedKey = "testcentre.migrated.v1"
 
     private static let master = TestDomain.master
 
@@ -36,10 +34,16 @@ public enum TestCentre {
     @MainActor public static func activate(_ d: TestDomain) {
         UserDefaults.standard.set(true, forKey: activePrefix + d.id)
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: startedPrefix + d.id)
+        #if os(iOS)
+        if d == .display || d == .master { DisplayPerformanceMonitor.shared.refreshActivation() }
+        #endif
     }
 
     @MainActor public static func deactivate(_ d: TestDomain) {
         UserDefaults.standard.set(false, forKey: activePrefix + d.id)
+        #if os(iOS)
+        if d == .display || d == .master { DisplayPerformanceMonitor.shared.refreshActivation() }
+        #endif
     }
 
     public static func startedAt(_ d: TestDomain) -> Date? {
@@ -61,12 +65,6 @@ public enum TestCentre {
         guard let data = UserDefaults.standard.data(forKey: answersPrefix + d.id),
               let m = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
         return m
-    }
-
-    @MainActor public static func setAnswers(_ m: [String: String], for d: TestDomain) {
-        if let data = try? JSONEncoder().encode(m) {
-            UserDefaults.standard.set(data, forKey: answersPrefix + d.id)
-        }
     }
 
     // MARK: - All-time drained-rows tally (#990)
@@ -93,19 +91,4 @@ public enum TestCentre {
         UserDefaults.standard.integer(forKey: cumulativeDrainedKey)
     }
 
-    /// One-time migration: fold the scattered @AppStorage / PuffinExperiment / ScheduledDebugExport keys
-    /// behind this surface WITHOUT renaming them (read-through). Existing keys are PRESERVED (spec section
-    /// 10): the experimental toggles keep their PuffinExperiment.*Key names, the scheduled export keeps its
-    /// debugExport.* names. This only seeds the NEW testcentre.* surface and never deletes a legacy key.
-    /// Idempotent, guarded by the migratedKey bool.
-    @MainActor public static func migrate() {
-        guard !UserDefaults.standard.bool(forKey: migratedKey) else { return }
-        // Phase 1 has no testcentre.active.* state to seed from the legacy toggles (those are advanced
-        // experimental flags, gathered by the IA but not domain activations), so the migration only
-        // stamps the guard. The legacy keys are read in place through their existing accessors:
-        //   PuffinExperiment.defaultsKey / .deepDataKey / .broadcastHrKey / .keepRealtimeForDataKey /
-        //   .experimentalSleepV2Key / .autoDetectWorkoutsKey, and the ScheduledDebugExport "debugExport.*"
-        //   keys. Nothing is moved; the Test Centre screen reads them where they already live.
-        UserDefaults.standard.set(true, forKey: migratedKey)
-    }
 }

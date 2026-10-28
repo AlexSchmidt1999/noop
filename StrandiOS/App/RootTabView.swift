@@ -25,11 +25,12 @@ struct RootTabView: View {
 
     /// The live gym session, owned at the app root — see `LiftSessionController`.
     @EnvironmentObject private var liftSession: LiftSessionController
+    // The shell uses repository actions only; its screens observe the data themselves.
+    let repo: Repository
     /// External entry points must wait until the mandatory first-run gates have completed. The root owns
     /// that state; keeping it explicit here prevents this shell's window-level sheet from covering a gate.
     let homeScreenQuickActionsEnabled: Bool
 
-    @EnvironmentObject private var repo: Repository
     /// Cross-screen navigation requests (e.g. Live → "Manage devices"). Devices isn't a tab — it lives
     /// behind the More list — so a request presents it as a sheet, matching the quick-action screens.
     @EnvironmentObject private var router: NavRouter
@@ -141,6 +142,8 @@ struct RootTabView: View {
             moreTab(path: $tabPaths[4], scrollSignal: scrollTop[4]).tag(4)
         }
         .tint(StrandPalette.accent)
+        .onAppear { updatePerformanceTab() }
+        .onChangeCompat(of: selectedTab) { _ in updatePerformanceTab() }
         // Switching Coach off while STANDING on it leaves `selectedTab` pointing at a tag no tab claims
         // any more, which renders as an empty tab rather than as an error. Send that wearer to Today, and
         // only in that case, so a flip made from anywhere else does not move them.
@@ -245,6 +248,8 @@ struct RootTabView: View {
                 // (InsightsView), matching the FAB's "Log journal" action. Calm sheet easing.
                 withAnimation(Self.sheetEase) { quickAction = .journal }
                 router.requestedDestination = nil
+            case .trainingFavorites:
+                presentPendingExternalActionIfPossible()
             case nil:
                 break
             }
@@ -256,16 +261,16 @@ struct RootTabView: View {
                 router.quickActionsRequested = false
             }
         }
-        // A cold-launch selection is already pending when this shell appears; a warm selection arrives
-        // through the change callback. Both route through the same screens as the centre FAB.
+        // Cold-launch requests are already pending when this shell appears; warm requests arrive
+        // through the change callbacks. Both wait for the same mandatory launch gates.
         .onAppear {
-            presentPendingHomeScreenQuickActionIfPossible()
+            presentPendingExternalActionIfPossible()
         }
         .onChange(of: homeScreenQuickActions.pendingAction) { _, _ in
-            presentPendingHomeScreenQuickActionIfPossible()
+            presentPendingExternalActionIfPossible()
         }
         .onChange(of: homeScreenQuickActionsEnabled) { _, _ in
-            presentPendingHomeScreenQuickActionIfPossible()
+            presentPendingExternalActionIfPossible()
         }
         // The running gym session, reachable from ANY tab. It sits above the tab bar rather than
         // inside the Lift Log screen, because a workout outlives whichever screen you wandered to —
@@ -289,10 +294,20 @@ struct RootTabView: View {
         }
     }
 
-    /// Mandatory launch gates defer an external action. Once the shell is available, an explicit Home
-    /// Screen choice supersedes any ordinary shell sheet; choosing the already-open destination simply
+    /// Mandatory launch gates defer an external action. Once the shell is available, an explicit widget
+    /// or Home Screen choice supersedes any ordinary shell sheet; choosing the already-open destination simply
     /// consumes the request and leaves that screen in place.
-    private func presentPendingHomeScreenQuickActionIfPossible() {
+    private func presentPendingExternalActionIfPossible() {
+        if router.consumeTrainingFavoritesRequest(isReady: homeScreenQuickActionsEnabled) {
+            if let action = homeScreenQuickActions.pendingAction { homeScreenQuickActions.consume(action) }
+            showDevices = false
+            routedPillar = nil
+            quickAction = nil
+            liftSession.isPresented = false
+            selectedTab = 4
+            tabPaths[4] = NavigationPath([MoreDestination.trainingFavorites])
+            return
+        }
         guard homeScreenQuickActionsEnabled,
               let action = homeScreenQuickActions.pendingAction else { return }
 
@@ -308,6 +323,10 @@ struct RootTabView: View {
             routedPillar = nil
             quickAction = destination
         }
+    }
+
+    private func updatePerformanceTab() {
+        DisplayPerformanceMonitor.shared.setTab([.today, .trends, .sleep, .coach, .more][selectedTab])
     }
 
     /// A routed v5 pillar screen wrapped in its own nav stack + Done button (mirrors `quickScreen`).
@@ -340,6 +359,7 @@ struct RootTabView: View {
                 // it ever reaches the host.
                 case .coach: CoachView()
                 case .alarms: SmartAlarmView()
+                case .trainingFavorites: MoreDestination.trainingFavorites.destination
                 }
             }
             // The Trends/Today fallbacks above emit TabRoute value pushes (#198), which need a
@@ -600,7 +620,7 @@ private enum MoreDestination: Hashable {
     case insightsHub, intelligence, coach, insights, explore, compare
     case live, workouts, liftLog, health, labBook, stress, breathe, intervals, rhythm
     case fusedRecord, appleHealth, miBand, dataSources, backupSync, shortcutsExport, noopLimitations
-    case alarms, automations, testCentre, siriShortcuts, powerSaving, settings
+    case alarms, automations, testCentre, siriShortcuts, powerSaving, settings, trainingFavorites
 
     @ViewBuilder var destination: some View {
         switch self {
@@ -632,6 +652,7 @@ private enum MoreDestination: Hashable {
         case .siriShortcuts:   SiriShortcutsSettingsView()
         case .powerSaving:     PowerSavingView()
         case .settings:        SettingsView()
+        case .trainingFavorites: ScreenScaffold(title: nil) { TrainingFavoritesView() }
         }
     }
 }

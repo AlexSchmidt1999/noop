@@ -151,17 +151,20 @@ extension WhoopStore {
     /// already computes this pair, but it computes it alongside eight other streams, so a new HR row would
     /// invalidate a motion volume that cannot have changed. `StepsEstimateEngine.dayMotionIntensity` is a
     /// pure fold over one day's gravity stream and nothing else, so its cache key must move when that
-    /// stream moves and at no other time. Same COUNT/COALESCE(MAX) shape and the same `(deviceId, ts)`
-    /// index as `hrFingerprint(deviceId:from:to:)` above, and never a row fetch.
+    /// stream moves and at no other time. Scalar subqueries keep the pair in ONE SQLite statement/snapshot
+    /// while letting MAX seek the `(deviceId, ts)` index endpoint instead of updating an aggregate for
+    /// every counted row. COUNT still walks the range.
     public func gravityFingerprint(deviceId: String, from: Int, to: Int) async throws -> (count: Int, maxTs: Int) {
         // Counted for the same reason as `hasHrInWindow` above; see `StoreProbeTally`.
         let probeStarted = DispatchTime.now().uptimeNanoseconds
         defer { StoreProbeRecorder.record(.gravityFp, nanos: DispatchTime.now().uptimeNanoseconds &- probeStarted) }
         return try syncRead { db in
             guard let row = try Row.fetchOne(db, sql: """
-                SELECT COUNT(*) AS c, COALESCE(MAX(ts), 0) AS m FROM gravitySample
-                WHERE deviceId = ? AND ts >= ? AND ts <= ?
-                """, arguments: [deviceId, from, to]) else { return (0, 0) }
+                SELECT (SELECT COUNT(*) FROM gravitySample
+                        WHERE deviceId = ? AND ts >= ? AND ts <= ?) AS c,
+                       COALESCE((SELECT MAX(ts) FROM gravitySample
+                                 WHERE deviceId = ? AND ts >= ? AND ts <= ?), 0) AS m
+                """, arguments: [deviceId, from, to, deviceId, from, to]) else { return (0, 0) }
             let c: Int = row["c"]
             let m: Int = row["m"]
             return (c, m)
@@ -903,8 +906,10 @@ extension WhoopStore {
     /// #1911 wants to know WHICH table holds a multi-gigabyte database, and the answer was unavailable on
     /// Apple: the Test Centre probe emitted nine keys and left out `ppgHr`, `sleepState`, `ppgWaveform`
     /// and `v18Aux` — the four Android's own comment singles out as "can each be large", and the ones a
-    /// row-count model misprices worst, since `ppgWaveformSample` is the only blob table here. A footprint
-    /// that omits the blob table cannot attribute the bytes it was collected to explain.
+    /// row-count model misprices worst, since `ppgWaveformSample` was the only blob table here. A
+    /// footprint that omits the blob table cannot attribute the bytes it was collected to explain.
+    /// `ecgWaveformSample` (#2847) is the second, and the one where a row count misleads by the widest
+    /// margin: 1,572 bytes a row against roughly 30 for a scalar stream.
     ///
     /// Shares `rawTableKeys` with `storageStats()` and `TimestampHeal` so a table added to one is seen by
     /// all three — counted in the total, named in the breakdown, and healed. Best-effort
@@ -923,9 +928,9 @@ extension WhoopStore {
     /// Estimated payload bytes per decoded stream table, keyed as `storageRowCounts()` keys.
     ///
     /// #1911 asks which table holds a multi-gigabyte database, and row counts alone cannot answer it: the
-    /// twelve fixed-width tables are comparable by rows, but `ppgWaveformSample` stores a BLOB whose size
-    /// varies, and it is the table most likely to hold bytes a per-second row model does not predict. So
-    /// this measures the blob rather than assuming it.
+    /// fixed-width tables are comparable by rows, but `ppgWaveformSample` and `ecgWaveformSample` each
+    /// store a BLOB whose size varies, and those are the tables most likely to hold bytes a per-second row
+    /// model does not predict. So this measures the blob rather than assuming it.
     ///
     /// Sampled, not scanned: the mean payload of up to `sampleRows` rows, multiplied by the count. A full
     /// `SUM(LENGTH(...))` over a 6.5 GB store is exactly the kind of read this diagnostic exists to let
@@ -982,6 +987,7 @@ extension WhoopStore {
         ("spo2", "spo2Sample"), ("skinTemp", "skinTempSample"), ("resp", "respSample"),
         ("gravity", "gravitySample"), ("steps", "stepSample"), ("ppgHr", "ppgHrSample"),
         ("sleepState", "sleepStateSample"), ("ppgWaveform", "ppgWaveformSample"),
+        ("ecgWaveform", "ecgWaveformSample"),
         ("v18Aux", "v18AuxSample"),
     ]
 

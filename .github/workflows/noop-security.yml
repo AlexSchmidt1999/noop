@@ -149,9 +149,6 @@ jobs:
       - name: Inspect unsigned app and create immutable handoff
         run: |
           set -euo pipefail
-          # The iOS target's PRODUCT_NAME is "NOOP Staging". Normalize only the
-          # outer unsigned bundle directory for the IPA/artifact handoff.
-          mv 'build/dd/Build/Products/Release-iphoneos/NOOP Staging.app' 'build/dd/Build/Products/Release-iphoneos/NOOP.app'
           app='build/dd/Build/Products/Release-iphoneos/NOOP.app'
           python3 scripts/security/binary.py "$app" --report build/security/binary.json
           tar -czf build/security/unsigned-app.tar.gz -C build/dd/Build/Products/Release-iphoneos NOOP.app

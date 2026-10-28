@@ -1,9 +1,11 @@
 # iPhone UI contributions included in NOOP 12
 
 Nine contributions from this fork are included in upstream NOOP 12.0.0.
-The fork now uses the release app source without additional UI patches. The separate
-lazy-dashboard proposal, PR #2638, is still open and is excluded from this build.
-The fork retains its reviewed security and local signing pipeline.
+NOOP 12.0.0 remains the base. The fork test branches additionally keep the sync indicator
+expanded throughout a transfer, construct Today cards lazily, and isolate header-width state.
+The earlier upstream lazy-dashboard proposal, PR #2638, remains a separate review.
+The fork retains its reviewed security and local signing pipeline; new upstream PRs wait
+for device testing. See [fork training testing](FORK_TRAINING_TESTING.md).
 
 | Location | Problem and correction |
 |---|---|

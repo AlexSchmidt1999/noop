@@ -902,6 +902,10 @@ object IntelligenceEngine {
         // scale); this must NOT coalesce so a ring can't be cached as a WHOOP.
         val cacheFamilyByOwner = HashMap<String, DeviceFamily?>()
 
+        // #2517: resolved once per pass rather than per day. The zone cannot meaningfully change inside
+        // one scoring pass, and the Swift twin reads `TimeZone.current` at each call for the same reason
+        // it is cheap there.
+        val dayWindowSkewZoneRules = java.time.ZoneId.systemDefault().rules
         for (offset in 0 until maxDays) {
             val dayStart = nowLocalMidnight - offset * SECONDS_PER_DAY
             val day = AnalyticsEngine.dayString(dayStart, tzOffsetSeconds)
@@ -911,6 +915,19 @@ object IntelligenceEngine {
             // <200-HR SKIPPED line below stays a plain diag (that day is never cached).
             val dayDiagLines = ArrayList<String>()
             fun dayDiag(line: String) { dayDiagLines.add(line); diag(line) }
+            // #2517: the day window is a fixed SECONDS_PER_DAY and a transition day is not, so the hour it
+            // misplaces is RECORDED here rather than corrected. Two offset lookups per scored day and a
+            // null on every ordinary one; see `dayWindowSkewLine` for why this is always-on and for
+            // what it deliberately does not claim. Routed through `dayDiag` so a cache HIT replays it and
+            // the strap log reads the same on a reused pass. Twin of the Swift emit.
+            AnalyticsEngine.dayWindowSkewLine(
+                day = day,
+                offsetAtStart = dayWindowSkewZoneRules
+                    .getOffset(java.time.Instant.ofEpochSecond(dayStart)).totalSeconds.toLong(),
+                offsetAtFixedEnd = dayWindowSkewZoneRules
+                    .getOffset(java.time.Instant.ofEpochSecond(dayStart + SECONDS_PER_DAY))
+                    .totalSeconds.toLong(),
+            )?.let { dayDiag(it) }
             // Read a generous window around the night that ends on `day`; the stager finds the span.
             val from = dayStart - StreamReadCap.LOOKBACK_SECONDS
             // Sleep read-window END — see `sleepReadWindowEnd`. A PAST day reads through to the next
@@ -3236,7 +3253,9 @@ object IntelligenceEngine {
         val inBedBpms = hr.filter { s -> sessions.any { s.ts >= it.start && s.ts < it.end } }.map { it.bpm }
         val out = ArrayList<String>(2)
         out.add(rhrFloorMeanLogLine(day, rhrFloor, inBedBpms))
-        SleepStager.rhrBinGateLogLine(day, sessions.map { it.start to it.end }, hr, rhrFloor)
+        SleepStager.rhrBinGateLogLine(day, sessions.map { it.start to it.end }, hr, rhrFloor,
+            minBinSamples = SleepStager.rhrMinBinSamples,
+            minPlausibleBpm = SleepStager.rhrMinPlausibleBpm)
             ?.let { out.add(it) }
         return out
     }

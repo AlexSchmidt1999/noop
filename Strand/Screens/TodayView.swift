@@ -95,7 +95,7 @@ struct ActiveWorkoutIndicatorModel: Equatable {
     }
 }
 
-struct ActiveWorkoutIndicatorCard: View {
+private struct ActiveWorkoutIndicatorCard: View {
     let model: ActiveWorkoutIndicatorModel
     let onReturn: () -> Void
 
@@ -165,23 +165,19 @@ struct ActiveWorkoutIndicatorCard: View {
 
 /// Leaf-isolated so an in-progress workout's ~per-sample `AppModel` churn (the elapsed clock tick + the
 /// rewritten `activeWorkout`) re-renders ONLY this card, never the whole Today dashboard, the same
-/// leaf-isolation pattern the file documents for the live status/sync rows. With `showStart`, today's
-/// idle state offers the shared workout picker; past days only show an active-workout indicator.
+/// leaf-isolation pattern the file documents for the live status/sync rows. Renders nothing when no workout
+/// is active, so the card auto-appears/clears purely off `AppModel.activeWorkout`.
 ///
 /// Non-private so the liquid Home (`LiquidTodayView`) renders the SAME leaf — the liquid rewrite dropped this
 /// indicator (#105), and sharing one implementation keeps the two Today screens (and Android's
 /// `WorkoutInProgressCard`) from drifting. It carries its own `app`/`router` environment objects, so a caller
 /// only needs to place `ActiveWorkoutIndicatorSection()` in its body.
 struct ActiveWorkoutIndicatorSection: View {
-    var showStart = false
     @EnvironmentObject var app: AppModel
     @EnvironmentObject var router: NavRouter
 
     var body: some View {
-        if showStart {
-            // Keep this host mounted when a workout starts so its picker and live view survive the update.
-            WorkoutStartControl(showsActiveIndicator: true)
-        } else if let model = ActiveWorkoutIndicatorModel.make(from: app.activeWorkout) {
+        if let model = ActiveWorkoutIndicatorModel.make(from: app.activeWorkout) {
             ActiveWorkoutIndicatorCard(model: model) {
                 StrandHaptic.selection.play()
                 router.openActiveWorkout()
@@ -307,10 +303,8 @@ struct TodayView: View {
     // the deferred set immediately (belt-and-braces alongside the coalesced refreshSeq bump). A bare boolean
     // that flips ~twice per offload, so it costs nothing like the per-tick chunk count would.
     @State private var liveBackfillingFlag = false
-    // #1164: mirror of `LiveState.historyPendingSync` (strap has banked records newer than our frontier).
-    // Bridged through the same `BackfillFlagBridge` as `liveBackfillingFlag` (no second LiveState observer).
-    // Drives the Today Rest "Pending sync" state so a provisional score isn't shown as final.
-    @State private var liveHistoryPendingSyncFlag = false
+    // Coalesced offload/history state shared by both Rest readouts; chunk gaps do not flash the hint.
+    @State private var livePendingSyncFlag = false
     // #755: have the history-wide reads ever populated this session? Used so the FIRST load always runs them
     // (even mid-offload, so a cold launch during a sync is never a blank dashboard), while later re-loads can
     // safely defer them during an active backfill.
@@ -1327,6 +1321,8 @@ struct TodayView: View {
                     .frame(minWidth: 320, minHeight: 360)
             }
 
+            pendingSyncIndicator
+
             Spacer(minLength: 8)
 
             // Uniform 36pt circular icon set: recording-status light, updates bell, quick-add (+), menu.
@@ -1459,10 +1455,7 @@ struct TodayView: View {
 
     var body: some View {
         ScreenScaffold(title: scaffoldTitle, onRefresh: { await repo.refresh() },
-                       // PERF (scroll): lazy column so the scaffold materialises Today's content on demand.
-                       // Today supplies its own inner eager VStack (below), so the staggered section reveal is
-                       // unchanged, this only defers building the single inner stack until it scrolls in.
-                       // Byte-identical layout (LazyVStack == eager VStack alignment/spacing/header).
+                       // Both columns are lazy so off-screen sections defer chart layout.
                        lazy: true,
                        // PERF (scroll stutter): the day-cycle scene is a static masked Image. CoreAnimation
                        // already caches it as a stable image layer, so it does NOT re-rasterize on body
@@ -1472,7 +1465,7 @@ struct TodayView: View {
                        // lag regression; removing the flatten restores native layer caching.
                        topBackground: showDayCycleBackground
                            ? AnyView(SceneScreenBackground(hour: demoSceneHour)) : nil) {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 #if os(iOS)
                 // Compact top bar: profile/settings (left) · ‹ Today › day-nav (centre, bold) · strap
                 // battery (right). Replaces the big title + the full-width day-nav pill (WHOOP-style).
@@ -1491,14 +1484,15 @@ struct TodayView: View {
                 // A "workout in progress" indicator whenever a manual workout is active. A tap routes to Live
                 // and opens the in-exercise screen. Its own leaf owns the AppModel observation + per-second
                 // clock, so the live tick never re-renders TodayView.body.
-                ActiveWorkoutIndicatorSection(showStart: selectedDayOffset == 0)
+                //
+                // No Start here, the Android twin carries the reasoning (TodayScreen.kt, the same block):
+                // #2467 wanted Today's Start to arrive WITH the recording-plus-coaching merge, and only the
+                // button was built, so Today held both of the entry points the report was about.
+                ActiveWorkoutIndicatorSection()
                 // The "still building" and "new here?" prompts are about getting today's scores going,
                 // so they stay anchored to today rather than reappearing on every navigated past day.
                 if selectedDayOffset == 0 && repo.today?.recovery == nil {
-                    // While the strap is mid-offload, say so, empty tiles read as final otherwise (#77).
-                    // Its own subview observes LiveState (backfilling + chunk count tick during an offload)
-                    // so it refreshes without re-rendering the rest of Today (scroll-stutter fix).
-                    SyncingHistoryNoteIfBackfilling()
+                    // Sync progress stays in the header and Data Sources; inserting a note moves the cards.
                     if !scoresBuildingDismissed {
                         DataPendingNote(
                             title: "Live now. Your scores are building.",
@@ -1556,7 +1550,7 @@ struct TodayView: View {
             // the boolean EDGE up. loadAll reads the flag to defer the heavy history-wide reads during an
             // active offload; the off→false edge below re-runs them as a safety net to the coalesced refresh.
             .background(BackfillFlagBridge(flag: $liveBackfillingFlag,
-                                            pendingSyncFlag: $liveHistoryPendingSyncFlag))
+                                            pendingSyncFlag: $livePendingSyncFlag))
         }
         // Reload when the data refreshes OR the selected day changes, the HR trend and Rest score are
         // day-scoped, so navigating must re-fetch them for the newly selected window.
@@ -1592,6 +1586,7 @@ struct TodayView: View {
         }
         #if os(macOS)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) { pendingSyncIndicator }
             // The Updates "ringer" on the TRAILING (top-right) edge of the window toolbar
             // (iOS hosts it in the compact top bar instead).
             ToolbarItem(placement: .primaryAction) {
@@ -3215,9 +3210,7 @@ struct TodayView: View {
             // `provenanceKey` spells the same string the route does and stays a literal on purpose: it
             // asks which SOURCE won this day, not which catalog entry to open. See `HeroRingMetric`.
             heroRingColumn(section: .rest, domain: .rest, provenanceKey: "sleep_performance",
-                           detailRoute: .metric(HeroRingMetric.rest),
-                           caption: restIsPendingSync ? "Pending sync" : nil,
-                           captionWidth: ring) { restRing(diameter: ring) }
+                           detailRoute: .metric(HeroRingMetric.rest)) { restRing(diameter: ring) }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         // Zero-impact width reader: a clear background that publishes the row's width up via preference. It
@@ -3271,17 +3264,9 @@ struct TodayView: View {
     /// intrinsically diameter×diameter, so the column just centres it and stretches to an equal share
     /// of the row width.
     @ViewBuilder
-    /// `caption` is an optional one-line note under the domain label — currently Rest's "Pending sync".
-    ///
-    /// It lives HERE, under the label, rather than over the ring, for two reasons. It cannot cover the
-    /// score, which is what made the old overlay hide a number the user had every right to see. And it is
-    /// laid out at the COLUMN's width rather than the ring's, so it has room to render: the overlay was
-    /// measured against the circle and ellipsised its own explanation mid-word while spilling past the
-    /// ring's edge. Mirrors Android's `HeroRingColumn(caption:)`.
     private func heroRingColumn<RingBody: View>(
         section: ScoreSection, domain: DomainTheme, provenanceKey: String? = nil,
-        onOpenBreakdown: (() -> Void)? = nil, detailRoute: TabRoute? = nil, caption: String? = nil,
-        captionWidth: CGFloat = 98,
+        onOpenBreakdown: (() -> Void)? = nil, detailRoute: TabRoute? = nil,
         @ViewBuilder ring: () -> RingBody
     ) -> some View {
         VStack(spacing: 8) {
@@ -3371,24 +3356,6 @@ struct TodayView: View {
                         .accessibilityLabel("Source: \(label)")
                 }
             }
-            // LAST in the column, below the provenance badge rather than above it. The badges sit at the
-            // same height across the three columns and a caption on one of them must not push that
-            // column's badge a line lower than its neighbours'. The row is top-aligned and self-sizing
-            // (#762), so a caption grows the row and leaves every ring where it was.
-            if let caption {
-                // Bounded to the RING's width, not left to size itself. Unlike Android, whose three hero
-                // columns are laid out at a fixed `col` width, these columns take the width of what is in
-                // them — so an unbounded caption would widen this one on a longer translation and tip the
-                // trio off centre. Two lines at the ring's width fits the longest of them; the shrink is
-                // the same allowance the domain label above it already uses.
-                Text(caption)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(StrandPalette.textTertiary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: captionWidth)
-            }
         }
     }
 
@@ -3435,13 +3402,22 @@ struct TodayView: View {
         }
     }
 
-    /// Whether today's Rest is provisional because the strap still has records to send. Resolved once and
-    /// read by both surfaces that say so — the hero column's caption and the Rest tile's — so the two can
-    /// never disagree about the same moment.
+    /// Whether today's Rest is provisional because the strap still has records to send.
     private var restIsPendingSync: Bool {
         Self.restPendingSync(restScore: restScore, backfilling: liveBackfillingFlag,
-                             historyPendingSync: liveHistoryPendingSyncFlag,
+                             historyPendingSync: livePendingSyncFlag,
                              isTodaySelected: selectedDayOffset == 0)
+    }
+
+    private var pendingSyncIndicator: some View {
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .font(StrandFont.caption.weight(.semibold))
+            .foregroundStyle(StrandPalette.textTertiary)
+            .frame(width: NoopMetrics.space5, height: NoopMetrics.space5)
+            .opacity(restIsPendingSync ? 1 : 0)
+            .help("Pending sync · strap history still offloading")
+            .accessibilityLabel("Pending sync · strap history still offloading")
+            .accessibilityHidden(!restIsPendingSync)
     }
 
     /// Rest (sleep composite 0–100) hero ring.
@@ -3570,6 +3546,27 @@ struct TodayView: View {
 
     // MARK: HEART RATE, today's continuous HR, off the strap's own ~1Hz history.
 
+    /// The Today HR card's empty-state heading, which states what the bucket read returned and nothing
+    /// else. It used to open "Calibrating" and assert that nothing had been banked today, neither of which
+    /// is established here: the gate is simply that the active-strap-plus-imports union came back with
+    /// under two buckets. Nothing on that branch knows whether a strap is calibrating, whether it has
+    /// offloaded, or whether rows sit under a source this union cannot see, and a card naming a cause it
+    /// has not checked sends a reader looking in the wrong place. One stored block is not "no heart rate"
+    /// either, so it gets its own line rather than being rounded down to zero. Android twin: the `when` in
+    /// `HeartRateTrendCard`'s empty branch.
+    private var hrEmptyTitle: String {
+        if selectedDayOffset != 0 { return String(localized: "No heart rate for this day") }
+        if hrPoints.count == 1 { return String(localized: "One five-minute block of heart rate today") }
+        return String(localized: "No heart rate stored for today yet")
+    }
+
+    /// The line under `hrEmptyTitle`: what would put a curve here, without claiming why there is not one.
+    private var hrEmptyDetail: String {
+        if selectedDayOffset != 0 { return String(localized: "Step back to a day the strap was worn.") }
+        if hrPoints.count == 1 { return String(localized: "The curve needs two of them to draw a line.") }
+        return String(localized: "The curve draws once the strap offloads, or once an import brings one in.")
+    }
+
     /// A full-width 24-hour heart-rate trend, plotted from 5-minute bucket means of the strap's
     /// `hrSample` history (offloaded even while the app was closed, so the day reads continuously).
     /// When there are fewer than two buckets it shows an explicit calibrating/empty card rather than
@@ -3632,23 +3629,20 @@ struct TodayView: View {
                 hrZoomHint
             }
         } else {
-            // #863: an empty / single-bucket day. A calibrating 4.0 banks HR slowly, so an empty curve early
-            // on isn't a fault , say so explicitly instead of leaving a blank where the chart was (which read
-            // as the graph freezing). We don't silently swap in another day's curve here; the honest empty
-            // state is the parity-matched fix. Mirrors the Android HeartRateTrendCard empty branch.
+            // #863: an empty / single-bucket day. An empty curve early on isn't a fault, so say what the
+            // read came back with instead of leaving a blank where the chart was (which read as the graph
+            // freezing). We don't silently swap in another day's curve here; the honest empty state is the
+            // parity-matched fix. The wording lives in `hrEmptyTitle` / `hrEmptyDetail`, which say what was
+            // found rather than why. Mirrors the Android HeartRateTrendCard empty branch.
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 SectionHeader("Heart Rate", overline: "\(selectedDayOverline)")
                 ChartCard(
                     title: "Beats per minute",
-                    subtitle: selectedDayOffset == 0
-                        ? String(localized: "Calibrating, no heart rate banked yet today")
-                        : String(localized: "No heart rate for this day"),
+                    subtitle: hrEmptyTitle,
                     trailing: nil,
                     tint: StrandPalette.metricRose
                 ) {
-                    Text(selectedDayOffset == 0
-                        ? String(localized: "Your curve fills in as the strap offloads its history.")
-                        : String(localized: "Step back to a day the strap was worn."))
+                    Text(hrEmptyDetail)
                         .font(StrandFont.footnote)
                         .foregroundStyle(StrandPalette.textTertiary)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -3756,7 +3750,7 @@ struct TodayView: View {
             let start = Date(timeIntervalSince1970: TimeInterval(w.startTs))
             let end = Date(timeIntervalSince1970: TimeInterval(w.endTs))
             guard end >= win.lowerBound, start <= win.upperBound else { return nil }
-            return .init(start: start, end: end, symbol: sportSymbol(w.sport))
+            return .init(start: start, end: end, symbol: sportSymbol(w.sport), sport: w.sport, source: w.source)
         }
     }
 
@@ -3964,10 +3958,8 @@ struct TodayView: View {
                 // Component 2: a scored day shows its duration/efficiency caption; an unscored TODAY shows
                 // the "building" hint; a past day with no Rest falls to the honest "Needs the strap" rather
                 // than a bare blank, so the tile always carries a state.
-                caption: restIsPendingSync
-                    ? String(localized: "Pending sync · strap history still offloading")
-                    : (restScore != nil ? restCaption(d)
-                        : (buildingHint(.rest) ?? restCaption(d) ?? Self.needsStrapCaption)),
+                caption: restScore != nil ? restCaption(d)
+                    : (buildingHint(.rest) ?? restCaption(d) ?? Self.needsStrapCaption),
                 accent: restScore.map { StrandPalette.recoveryColor($0) } ?? StrandPalette.textPrimary,
                 // The Rest composite (0–100) trend, not raw sleep minutes, tracks the score above (#614).
                 sparkline: sparks["sleep_performance"],
@@ -4671,24 +4663,27 @@ struct TodayView: View {
         async let weightSpark        = sparkValues("weight", source: "apple-health", window: 90)
         async let activeKcalSpark    = sparkValues("active_kcal", source: "apple-health", window: 14)
 
-        sparks["recovery"]        = await recoverySpark
-        sparks["strain"]          = await strainSpark
-        sparks["sleep_total_min"] = await sleepTotalSpark
-        sparks["hrv"]             = await hrvSpark
-        sparks["rhr"]             = await rhrSpark
-        sparks["spo2"]            = await spo2Spark
-        sparks["spo2_candidate"]  = await spo2CandidateSpark
-        sparks["skin_temp"]       = await skinTempSpark
-        sparks["resp_rate"]   = await respRateSpark
-        sparks["steps"]       = await stepsAppleSpark
+        // Await into local values so each completed read does not rebuild the entire dashboard.
+        var loadedSparks = await [
+            "recovery": recoverySpark,
+            "strain": strainSpark,
+            "sleep_total_min": sleepTotalSpark,
+            "hrv": hrvSpark,
+            "rhr": rhrSpark,
+            "spo2": spo2Spark,
+            "spo2_candidate": spo2CandidateSpark,
+            "skin_temp": skinTempSpark,
+            "resp_rate": respRateSpark,
+            "steps": stepsAppleSpark,
+            "weight": weightSpark,
+            "active_kcal": activeKcalSpark
+        ]
         // Steps prefer the strap's own @57 daily total (no metricSeries, it lives on the daily row),
         // so a strap-only WHOOP 5/MG user gets a steps trend without Apple Health. Falls back to the
         // Apple Health series above when the strap supplied no steps (#276). This synchronous overwrite
-        // must run AFTER sparks["steps"] is assigned from the Apple-Health read above (unchanged order).
+        // must run AFTER the Apple-Health read above (unchanged precedence).
         let strapSteps = repo.days.suffix(14).compactMap { $0.steps.map(Double.init) }
-        if !strapSteps.isEmpty { sparks["steps"] = strapSteps }
-        sparks["weight"]      = await weightSpark
-        sparks["active_kcal"] = await activeKcalSpark
+        if !strapSteps.isEmpty { loadedSparks["steps"] = strapSteps }
 
         // Steps ESTIMATE per day (WHOOP 4.0 motion → calibrated steps), the Mi-Band series, workout +
         // Apple-daily rows, and the three "your cards" series, all history-wide (none depends on the
@@ -4720,24 +4715,24 @@ struct TodayView: View {
         // Only consulted when a day has no REAL step count (see the .steps tile), so it never overrides a
         // measured value, it just fills the gap a 4.0 user would otherwise see as ", ".
         let stepsEstSeries = await stepsEstSeriesA
-        stepsEstByDay = Dictionary(stepsEstSeries.map { ($0.day, Int($0.value.rounded())) },
-                                   uniquingKeysWith: { _, last in last })
+        let loadedStepsEstByDay = Dictionary(stepsEstSeries.map { ($0.day, Int($0.value.rounded())) },
+                                             uniquingKeysWith: { _, last in last })
 
-        workouts = await workoutsA
-        appleDays = await appleDaysA
+        let loadedWorkouts = await workoutsA
+        let loadedAppleDays = await appleDaysA
         // Mi Band (Mi Fitness import), distinct days across its representative metric keys.
         let xSteps = await xStepsA
         let xSleep = await xSleepA
-        xiaomiDays = Set(xSteps.map(\.day) + xSleep.map(\.day)).count
+        let loadedXiaomiDays = Set(xSteps.map(\.day) + xSleep.map(\.day)).count
         // Your cards (#582 / Design Reset): Stress / Fitness age / Vitality for the pinned home cards.
         // #753: Stress mirrors StressView. `StressModel(days:stored:).score` is TODAY's score (stored row
         // preferred, else derived off the live RHR/HRV baseline), so the pinned card never lags the detail
         // page on a day with no banked stress row. nil (no usable signal) keeps the honest "Calibrating"
         // placeholder, matching StressView's empty state. Fitness age / Vitality keep their merged reads.
-        stressToday = StressModel(days: repo.days, stored: await stressStoredA)?.score
-        fitnessAgeToday = (await fitnessAgeSeriesA).last?.value
-        vo2maxToday = (await vo2maxSeriesA).last?.value   // #1391: latest banked VO₂max estimate
-        vitalityToday = (await vitalitySeriesA).last?.value
+        let loadedStress = StressModel(days: repo.days, stored: await stressStoredA)?.score
+        let loadedFitnessAge = (await fitnessAgeSeriesA).last?.value
+        let loadedVo2max = (await vo2maxSeriesA).last?.value
+        let loadedVitality = (await vitalitySeriesA).last?.value
         // Hydration card (opt-in): today's stored total + the sex/Effort goal. Only loaded when the
         // feature is on, so a disabled feature does zero work and the card stays hidden.
         await reloadHydration()
@@ -4746,6 +4741,16 @@ struct TodayView: View {
             let farFuture = Int(Date.distantFuture.timeIntervalSince1970)
             xiaomiSleeps = ((try? await store.sleepSessions(deviceId: "xiaomi-band", from: 0, to: farFuture, limit: 4000))?.count) ?? 0
         }
+        // Preserve the day-scoped Rest spark and commit the history-wide values without suspending.
+        sparks.merge(loadedSparks) { _, loaded in loaded }
+        stepsEstByDay = loadedStepsEstByDay
+        workouts = loadedWorkouts
+        appleDays = loadedAppleDays
+        xiaomiDays = loadedXiaomiDays
+        stressToday = loadedStress
+        fitnessAgeToday = loadedFitnessAge
+        vo2maxToday = loadedVo2max
+        vitalityToday = loadedVitality
         // #849: snapshot everything just computed onto the long-lived `repo`, keyed by the seq we loaded for,
         // so a later re-mount with unchanged data restores it in-memory instead of re-running this pass.
         // Note the Rest-tile spark (`sparks["sleep_performance"]`) is written by loadDayScoped, which always
@@ -4925,7 +4930,6 @@ struct TodayView: View {
         // trend didn't track the score it sat under. Plot the SAME merged `sleep_performance` 0–100 series
         // the score reads instead, windowed to the trailing 14 calendar days like every other spark.
         let restSparkLocal = trailingWindow(restSeries, days: 14).map { $0.value }
-        sparks["sleep_performance"] = restSparkLocal
         // The selected day's Rest, falling back to the series tail only when today itself is selected (a
         // navigated past day with no Rest row shows ", " rather than borrowing the newest value) AND that
         // tail night is still fresh. #977: a live 5.0 whose sleep never scores used to pin Rest to the
@@ -4935,7 +4939,6 @@ struct TodayView: View {
             todayValue: restByDay[selectedDayKey], lastDay: restSeries.last?.day,
             lastValue: restSeries.last?.value, isTodaySelected: selectedDayOffset == 0,
             todayKey: selectedDayKey)
-        restScore = restScoreLocal
 
         // Resolve the displayed score row, then map computed rows through durable input provenance so the
         // badge names the sensor/import provider rather than the device that ran NOOP's math.
@@ -4959,9 +4962,6 @@ struct TodayView: View {
                 metricKey: "sleep_performance"
             )
         }
-        provenanceByMetric = provenance
-        providerByMetric = providers
-
         // HR trend for the SELECTED day, 5-minute bucket means from that logical day's local midnight.
         // For today the window runs to now (an in-progress curve); for a navigated past day it runs the
         // full 24h to the next midnight. The logical day rolls at 04:00 (Repository.logicalDayStart), so
@@ -4990,10 +4990,9 @@ struct TodayView: View {
                 TrendPoint(date: Date(timeIntervalSince1970: TimeInterval(b.ts)), value: b.bpm,
                            segment: hrSegments[i])
             }
-        hrPoints = hrPointsLocal
         // The chart keeps plotting means; only the footer reads the samples behind them (#2032).
-        hrDayMin = hrBucketsLocal.map(\.minBpm).min()
-        hrDayMax = hrBucketsLocal.map(\.maxBpm).max()
+        let hrDayMinLocal = hrBucketsLocal.map(\.minBpm).min()
+        let hrDayMaxLocal = hrBucketsLocal.map(\.maxBpm).max()
 
         // #316 / @63, the selected day's representative activity class for the Steps tile icon. Reads the
         // day's step samples (now carrying `activityClass` after the v19 column) and takes the LAST non-nil
@@ -5002,7 +5001,6 @@ struct TodayView: View {
         // under its OWN fresh id, so a read pinned to the canonical "my-whoop" would drop the icon for a
         // re-added strap (the #904/#908 family). nil (no classed sample) hides the icon.
         let stepClassLocal = await repo.stepActivityClassLatest(from: windowStart, to: windowEndInclusive)
-        stepActivityClassToday = stepClassLocal
 
         // #860 item 1: the launch auto-land (#605/#739 "snap to the most recent data day when today is
         // empty") is RETIRED here. A fresh launch lands on today via `launchDayOffset` against the plain
@@ -5047,7 +5045,6 @@ struct TodayView: View {
         } else {
             liveStrainLocal = nil
         }
-        liveTodayStrain = liveStrainLocal
         // Pin the chart axis to the loaded window, today midnight→now, a past day the full 24h, so
         // a gap (e.g. a morning the strap wasn't banking) shows as empty space, not a late start.
         let newAxis = Date(timeIntervalSince1970: TimeInterval(windowStart))
@@ -5057,9 +5054,6 @@ struct TodayView: View {
         // day opens at full scale; a same-day end-extension keeps the user's zoom but RE-CLAMPS it into the
         // grown bounds (preserving its span) so a live sync never yanks them out of their zoom yet the window
         // can never sit outside the day. `panned(deltaSeconds: 0)` is the pure re-clamp.
-        hrZoomDomain = Self.reclampHrZoom(hrZoomDomain, oldAxis: hrAxis, newAxis: newAxis)
-        hrAxis = newAxis
-
         // Sleep session overlapping the window. Uses `allSleepSessions` (BOTH the imported and the
         // on-device COMPUTED source), a Bluetooth-only user's sleep lives under the computed source,
         // so the imported-only `sleepSessions` returns nothing. Keep blocks that actually overlap the
@@ -5076,7 +5070,6 @@ struct TodayView: View {
                 CachedSleepSession(startTs: span.start, endTs: span.end,
                                    efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil)
             }
-        sleepToday = sleepTodayLocal
 
         // #932: snapshot everything just computed onto the long-lived `repo`, keyed by the (seq, day) this
         // pass loaded FOR (both captured at entry), so a later re-mount with the same (seq, day) restores it
@@ -5084,10 +5077,21 @@ struct TodayView: View {
         // mid-await: a day swipe moves `selectedDayKey` (and `.task(id:)` cancels this pass) while the body
         // runs to completion, so its outputs can straddle two days; caching that mix under the ENTRY key
         // would serve it again later. The re-fired pass for the new key reloads + snapshots genuinely, so
-        // skipping here costs nothing but a cache miss. The snapshot is built from the LOCALS captured at
-        // each computation point, never from `@State` at tail time: a cancelled sibling pass's interleaved
-        // `@State` writes (its awaits still complete) can therefore never leak into this pass's bank.
+        // skipping here costs nothing but a cache miss. The snapshot uses the local query results.
         guard loadDayKey == selectedDayKey, !Task.isCancelled else { return }
+        // Commit together after the reads so each await does not rebuild the dashboard.
+        sparks["sleep_performance"] = restSparkLocal
+        restScore = restScoreLocal
+        provenanceByMetric = provenance
+        providerByMetric = providers
+        hrPoints = hrPointsLocal
+        hrDayMin = hrDayMinLocal
+        hrDayMax = hrDayMaxLocal
+        stepActivityClassToday = stepClassLocal
+        liveTodayStrain = liveStrainLocal
+        hrZoomDomain = Self.reclampHrZoom(hrZoomDomain, oldAxis: hrAxis, newAxis: newAxis)
+        hrAxis = newAxis
+        sleepToday = sleepTodayLocal
         repo.todayDayScopedCache = TodayDayScopedCache(
             restSpark: restSparkLocal,
             restScore: restScoreLocal,
@@ -5609,28 +5613,16 @@ private struct RecordingStatusLight: View {
     }
 }
 
-/// The "Syncing strap history…" note, shown only while a historical offload is running (#77). Owns the
-/// `LiveState` observation so the chunk count ticks without re-rendering the rest of Today.
-private struct SyncingHistoryNoteIfBackfilling: View {
-    @EnvironmentObject private var live: LiveState
-    var body: some View {
-        if live.backfilling { SyncingHistoryNote(chunks: live.syncChunksThisSession) }
-    }
-}
-
 /// #755: a zero-size leaf that mirrors `LiveState.backfilling` into a parent `@Binding` so TodayView can
 /// read the offload state to defer its heavy reads WITHOUT itself observing LiveState (which would re-flood
 /// the whole dashboard `body` on every ~1 Hz live tick, the scroll-stutter the rest of this file avoids).
 /// This leaf owns the observation but renders nothing and re-renders only itself; it pushes only the
 /// boolean EDGE up (not the per-tick chunk count), and writes the binding from `.onAppear`/`.onChange`
 /// (never during its own body evaluation). The parent's @State therefore flips ~twice per offload, not 1 Hz.
-private struct BackfillFlagBridge: View {
+struct BackfillFlagBridge: View {
     @EnvironmentObject private var live: LiveState
     @Binding var flag: Bool
-    /// #1164: optional mirror of `LiveState.historyPendingSync` (strap has banked records newer than our
-    /// frontier). Bridged through the SAME invisible leaf so a second LiveState observer isn't added to
-    /// the view tree (the 1 Hz flood isolation the top-of-type note describes). nil when the caller
-    /// doesn't need it.
+    /// Coalesced presentation state; the raw backfill flag above still controls deferred data reads.
     @Binding var pendingSyncFlag: Bool
     var body: some View {
         Color.clear
@@ -5638,46 +5630,50 @@ private struct BackfillFlagBridge: View {
             .accessibilityHidden(true)
             .onAppear {
                 if flag != live.backfilling { flag = live.backfilling }
-                if pendingSyncFlag != live.historyPendingSync { pendingSyncFlag = live.historyPendingSync }
             }
             .onChangeCompat(of: live.backfilling) { now in if flag != now { flag = now } }
-            .onChangeCompat(of: live.historyPendingSync) { now in if pendingSyncFlag != now { pendingSyncFlag = now } }
+            .debouncedSyncSignal(live.backfilling || live.historyPendingSync, into: $pendingSyncFlag)
     }
 }
 
-/// Honest strap-sync outcome row for the Data Sources card (ports the Android Live line, ed6a31d): the
-/// stalled-offload error when the last one died, else "History synced N ago". Hidden while an offload
-/// runs, the SyncingHistoryNote already says so. The `TimelineView` re-renders the relative label each
-/// minute. Owns the `LiveState` observation (scroll-stutter isolation).
+/// Persistent sync progress/outcome in Data Sources; chunk transitions never insert or remove a row.
+/// Owns LiveState and the minute clock so updates do not rebuild Today's charts.
 private struct StrapSyncRow: View {
     @EnvironmentObject private var live: LiveState
+    @State private var syncing = false
     var body: some View {
-        if !live.backfilling {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                HStack(alignment: .top, spacing: 10) {
-                    SourceBadge("Strap sync",
-                                tint: live.lastSyncError != nil ? StrandPalette.statusWarning
-                                    : live.lastSyncedAt != nil ? StrandPalette.accent
-                                    : StrandPalette.textTertiary)
-                    Spacer()
-                    if let error = live.lastSyncError {
-                        Text(error)
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.statusWarning)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else if let at = live.lastSyncedAt {
-                        Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textSecondary)
-                    } else {
-                        Text("Not synced yet")
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(StrandPalette.textTertiary)
-                    }
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            HStack(alignment: .top, spacing: NoopMetrics.rowSpacing) {
+                SourceBadge("Strap sync",
+                            tint: syncing ? StrandPalette.accent
+                                : live.lastSyncError != nil ? StrandPalette.statusWarning
+                                : live.lastSyncedAt != nil ? StrandPalette.accent
+                                : StrandPalette.textTertiary)
+                Spacer()
+                if syncing {
+                    Text(SyncActivityCopy.syncing(chunks: live.syncChunksThisSession, pagesBehind: nil).status)
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.accent)
+                        .lineLimit(1)
+                } else if let error = live.lastSyncError {
+                    Text(error)
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.statusWarning)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let at = live.lastSyncedAt {
+                    Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.textSecondary)
+                        .lineLimit(1)
+                } else {
+                    Text("Not synced yet")
+                        .font(StrandFont.captionNumber)
+                        .foregroundStyle(StrandPalette.textTertiary)
                 }
             }
         }
+        .debouncedSyncSignal(live.backfilling, into: $syncing)
     }
 }
 

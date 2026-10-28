@@ -16,7 +16,8 @@ import UserNotifications
 struct StrandiOSApp: App {
     /// UIKit bridge for Home Screen quick actions. SwiftUI keeps ownership of the scene and window.
     @UIApplicationDelegateAdaptor(HomeScreenQuickActionAppDelegate.self) private var appDelegate
-    @StateObject private var model: AppModel
+    // Own the model here; live-value views observe it without invalidating every scene on a pulse.
+    @State private var model: AppModel
     @StateObject private var health: HealthKitBridge
     /// The phone→watch link. Built + activated here so the watch app actually receives snapshots on a
     /// real device; without an owner that pushes it, the watch only ever shows placeholder data.
@@ -27,11 +28,7 @@ struct StrandiOSApp: App {
     /// NOOP's live heart rate banner. Built in `init` and fed from there (`LiveActivityController.follow`), not from
     /// a view: a process iOS starts in the background need not build one.
     @State private var liveActivity: LiveActivityController
-    /// The Lift Log session's own Live Activity. Separate from the live-HR one above: while a gym
-    /// session is open this is the banner that matters (it carries the heart rate too), so the HR
-    /// activity is suppressed rather than stacked beside it. Built in `init`, where the strap log it
-    /// writes to exists.
-    @State private var liftActivity: LiftLiveActivityController
+    @StateObject private var training: TrainingCoordinator
     /// The live gym session. Owned HERE, at the app root, rather than by the screen that shows it:
     /// swiping the workout sheet away must not stop the clock, silence the strap or drop the
     /// double-tap handler. See `LiftSessionController`.
@@ -85,7 +82,7 @@ struct StrandiOSApp: App {
         _router = StateObject(wrappedValue: router)
         NotificationPresenter.shared.onCoachBriefTapped = { [weak router] in router?.openCoach() }
         let model = AppModel()
-        _model = StateObject(wrappedValue: model)
+        _model = State(initialValue: model)
         CoachBriefScheduler.register(generateBrief: { [weak coach = model.coach] in
             await coach?.generateBrief()
         }, log: { [weak model] line in
@@ -115,11 +112,14 @@ struct StrandiOSApp: App {
         let liftActivity = LiftLiveActivityController(log: { [weak model] line in
             model?.live.append(log: AppModel.stamped(line))
         })
-        _liftActivity = State(initialValue: liftActivity)
+        // Restore before the coordinator's first push or any scene exists.
+        liftSession.resumeSaved()
+        let training = TrainingCoordinator(model: model, lift: liftSession, liftActivity: liftActivity)
+        _training = StateObject(wrappedValue: training)
         // The live heart rate banner makes room only for the Lift Log banner actually on screen, which carries the
         // heart rate itself — not for a sync (`LiveHRBannerLifecycle`).
         let liveActivity = LiveActivityController()
-        liveActivity.follow(model, standsAside: { [weak liftActivity] in liftActivity?.isShowing == true })
+        liveActivity.follow(model, standsAside: { [weak liftActivity, weak training] in liftActivity?.isShowing == true || training?.isShowingWorkout == true })
         _liveActivity = State(initialValue: liveActivity)
         // A gym session keeps ONE banner on the Lock Screen, its own — as the live-HR banner already
         // stands aside for it. A sync started in the foreground mid-session starts no sync banner.
@@ -128,9 +128,6 @@ struct StrandiOSApp: App {
         SyncLiveActivityController.shared.holdsBackNewBanner = { [weak liftSession] in
             liftSession?.isActive == true && UnitPrefs.liftLiveActivityEnabled()
         }
-        // Before any view or publisher exists: the first push to the Lock Screen banner must find the
-        // session already running, or it ends the banner iOS kept alive across the restart.
-        liftSession.resumeSaved()
         // #1538: a strap offload completes while the app is BACKGROUNDED — it stays alive as a
         // bluetooth-central to receive it — and the re-score it triggers took nearly eight minutes on the
         // reporter's install, far longer than that wake survives. The pass is all-or-nothing, so being
@@ -155,6 +152,7 @@ struct StrandiOSApp: App {
             noopDeviceId: model.deviceId
         )
         _health = StateObject(wrappedValue: bridge)
+        DisplayPerformanceMonitor.shared.configure(model: model, lift: liftSession)
         // Register a separate, always-on-while-authorized refresh task for Apple Health write-back.
         // The operation is write-only and bounded to the bridge's recent window; fresh BLE offloads still
         // use the immediate hook below. BGTaskScheduler chooses the actual wake time.
@@ -177,48 +175,10 @@ struct StrandiOSApp: App {
         }
     }
 
-    /// The Shortcut-import alert's presentation binding, hoisted OUT of the `.alert` chain.
-    ///
-    /// An inline `Binding(get:set:)` is two untyped closures the solver must infer in place, on a
-    /// modifier chain that had already blown the type-check budget. Declaring it as a `Binding<Bool>`
-    /// property replaces all of that with one known type. Hoisting the message alone was not enough —
-    /// the build failed again at the same modifier, which is why this one is here too.
-    private var healthImportAlertPresented: Binding<Bool> {
-        Binding(
-            get: { model.pendingShortcutHealthImport != nil },
-            set: { showing in
-                if !showing { model.cancelPendingHealthImport() }
-            }
-        )
-    }
-
-    /// The Shortcut-import alert's buttons, hoisted for the same reason as the binding above.
-    @ViewBuilder
-    private var healthImportAlertButtons: some View {
-        Button("Import") { model.confirmPendingHealthImport() }
-        Button("Cancel", role: .cancel) { model.cancelPendingHealthImport() }
-    }
-
-    /// The Shortcut-import alert's message, hoisted OUT of the `.alert` chain.
-    ///
-    /// Not a style preference. This closure — an `if let` around two interpolated `Text`s — sits on a
-    /// modifier chain that grew past the Swift type-checker's budget, and the build failed with
-    /// "unable to type-check this expression in reasonable time" pointing at `} message: {`. The
-    /// expression did not change; the chain around it did. Hoisting a sub-expression into its own
-    /// declaration gives the solver a fixed type to work from instead of one more unknown in a chain
-    /// it is already struggling with.
-    @ViewBuilder
-    private var healthImportAlertMessage: some View {
-        if let pending = model.pendingShortcutHealthImport {
-            Text("A Shortcut wants to add \(pending.daysCount) days and \(pending.workoutsCount) workouts to the Apple Health import source.")
-        } else {
-            Text("A Shortcut wants to add data to the Apple Health import source.")
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
-            iOSRootView()
+            iOSRootView(repo: model.repo)
+                .modifier(TrainingNotificationConfirmation(training: training))
                 .environmentObject(model)
                 .environmentObject(model.ble)   // #334: Today pull-to-sync reads BLEManager (no HR churn)
                 .environmentObject(model.live)
@@ -231,6 +191,7 @@ struct StrandiOSApp: App {
                 .environmentObject(router)
                 .environmentObject(UpdateStore.shared)
                 .environmentObject(liftSession)
+                .environmentObject(training)
                 // v5 L3: the shared stress check-in nudge surface, so the Breathe screen's passive
                 // card observes the SAME instance the central detector (AppModel.evaluateStress) posts to.
                 .environment(\.stressNudgeCenter, model.stressNudgeCenter)
@@ -244,20 +205,6 @@ struct StrandiOSApp: App {
                 // fixed-geometry tiles/gauges stay legible at the largest accessibility sizes rather than
                 // clipping; the common Larger-Text range still scales fully.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                // `hr` is the value being written: this runs in willSet, when `live.heartRate` still holds the old one.
-                .onReceive(model.live.$heartRate) { hr in
-                    // The gym banner's own cheap path: no presentation is built here, and a heart rate moves
-                    // the banner only when `LiftBannerPushPolicy` says it is worth a push. Everything else
-                    // about the session pushes through `pushLiftActivity` below, carrying the current number.
-                    liftActivity.updateHeartRate(model.live.connected ? (model.bpm ?? hr) : nil)
-                }
-                // The gym session's own banner follows each change to the session once it has landed —
-                // a stage, typed numbers, a rest's end — and the heart rate above; the controller decides
-                // what is worth pushing, and the banner's clocks tick on their own. A strap step is pushed
-                // at once, with its light-up alert, below.
-                .onReceive(liftSession.changesSettled) { _ in pushLiftActivity() }
-                // A strap double-tap lights the Lock Screen on the step it took.
-                .onReceive(liftSession.strapStepTaken) { _ in pushLiftActivity(alert: true) }
                 // #911/#759: republish the Home/Lock-Screen widget whenever the dashboard caches actually
                 // change mid-session. The only other publish site is the scenePhase .active handler, so
                 // during a long foreground session the widget froze at the last-foreground snapshot while
@@ -321,13 +268,11 @@ struct StrandiOSApp: App {
                 .onOpenURL { url in
                     if url.host == "import-health" {
                         model.handleHealthImportURL(url)
+                    } else if url == TrainingFavorite.configurationURL {
+                        router.openTrainingFavorites()
                     }
                 }
-                .alert("Import Apple Health data?", isPresented: healthImportAlertPresented) {
-                    healthImportAlertButtons
-                } message: {
-                    healthImportAlertMessage
-                }
+                .modifier(ShortcutHealthImportAlert(model: model))
                 // Bring the watch link up once at launch (WCSession ignores a redundant activate), then
                 // push the first snapshot so a watch that's already on-wrist gets current scores without
                 // waiting for the next foreground. activate() is idempotent + a no-op where WC isn't
@@ -346,12 +291,13 @@ struct StrandiOSApp: App {
         // HealthKitBridge.sync guards on `auth == .authorized`, so the scenePhase trigger stays a
         // safe no-op until the user opts in.
         .onChange(of: scenePhase, initial: true) { _, phase in
+            DisplayPerformanceMonitor.shared.setForegroundActive(phase == .active)
             if phase == .active {
                 CoachBriefScheduler.activateIfEnabled { await model.coach.generateBrief() }
                 model.drainPendingIntents(router: router)
                 // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
                 // the background comes back now, whether or not the strap is sending anything.
-                pushLiftActivity()
+                training.reconcile()
                 // Only the foreground may start the live heart rate banner: offer it now.
                 liveActivity.appBecameActive()
                 // End a "Connecting…" sync island whose sync never came, rather than leave it greyed.
@@ -392,6 +338,8 @@ struct StrandiOSApp: App {
                     await watch.pushLatest(from: model)
                 }
             } else if phase == .background {
+                model.persistActiveWorkout()
+                training.reconcile()
                 // Re-submit on every transition because iOS may discard an old best-effort request.
                 HealthWritebackBackgroundScheduler.updateSchedule(
                     isAuthorized: health.auth == .authorized)
@@ -414,34 +362,6 @@ struct StrandiOSApp: App {
         }
     }
 
-    /// Map the running session onto the Lock Screen banner.
-    ///
-    /// The wording and the numbers come from `LiftSessionController.presentation`, the same
-    /// resolution the in-app minimised bar renders, so the two surfaces cannot disagree. The heart
-    /// rate is the app's smoothed value, and only while the strap is actually connected — a frozen
-    /// last-known bpm on a Lock Screen reads as live and is not. `alert` lights the Lock Screen for this
-    /// push — see `LiftLiveActivityController.update`.
-    @MainActor
-    private func pushLiftActivity(alert: Bool = false) {
-        let system = UnitSystem(rawValue: unitSystemRaw) ?? .metric
-        guard let p = liftSession.presentation(system: system) else {
-            liftActivity.update(state: nil)
-            return
-        }
-        let lightUp = liftActivity.update(
-            state: LiftActivityAttributes.ContentState(
-                isResting: p.isResting,
-                exercise: p.exercise,
-                status: p.status,
-                detail: p.detail,
-                bpm: model.live.connected ? (model.bpm ?? model.live.heartRate) : nil,
-                next: p.next,
-                stageStartedAt: p.stageStartedAt,
-                restEndsAt: p.restEndsAt),
-            alert: alert)
-        // One line per strap step into NOOP's strap log: whether the Lock Screen was asked to light.
-        if let lightUp { model.live.append(log: AppModel.stamped(lightUp.logLine)) }
-    }
 }
 
 /// iOS root — the `RootTabView` shell with the first-run onboarding/pairing wizard overlaid until
@@ -452,6 +372,7 @@ struct StrandiOSApp: App {
 /// excluded `RootView()` sidebar for `RootTabView()`. The shared `OnboardingWizard`, `TermsGateView`,
 /// `WhatsNewView`, `AppChangelog`, and `Terms` symbols all compile into the iOS target unchanged.
 private struct iOSRootView: View {
+    let repo: Repository
     @AppStorage("noop.onboarded") private var onboarded = false
     @AppStorage("noop.lastSeenChangelogVersion") private var lastSeenChangelog = ""
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
@@ -482,7 +403,7 @@ private struct iOSRootView: View {
 
     private var shell: some View {
         ZStack {
-            RootTabView(homeScreenQuickActionsEnabled:
+            RootTabView(repo: repo, homeScreenQuickActionsEnabled:
                 demoBypass || (onboarded && acceptedTerms == Terms.currentVersion
                     && automaticLaunchSheetResolved))
             if !onboarded && !demoBypass {

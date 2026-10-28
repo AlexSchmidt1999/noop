@@ -116,10 +116,11 @@ struct TrendsView: View {
         let rhr: ResolvedMetric
         let strain: ResolvedMetric
         let rest: ResolvedMetric
+        let recoveryDays: [RecoveryDay]
     }
 
     /// Repository status publications can redraw Trends without changing its historical data.
-    /// Retain the five resolved windows across those redraws; invalidate on the data generation,
+    /// Retain the resolved windows and calendar dates; invalidate on the data generation,
     /// range, Rest-series revision, local day, or locale so readings and captions remain current.
     /// This reference does not publish changes of its own, avoiding a body-to-state update loop.
     @MainActor private final class ResolvedCache {
@@ -154,7 +155,10 @@ struct TrendsView: View {
                             hrv: resolve { $0.avgHrv },
                             rhr: resolve { $0.restingHr.map(Double.init) },
                             strain: resolve { $0.strain },
-                            rest: resolve { sleepPerfByDay[$0.day] })
+                            rest: resolve { sleepPerfByDay[$0.day] },
+                            recoveryDays: repo.days.suffix(max(range.days ?? repo.days.count, 365)).compactMap { d in
+                                date(d.day).map { RecoveryDay(date: $0, score: d.recovery) }
+                            })
         }
     }
 
@@ -291,9 +295,7 @@ struct TrendsView: View {
 
     private var scaffold: some View {
         ScreenScaffold(title: "Trends", subtitle: "The thread of you over time.",
-                       // PERF (scroll): lazy column — byte-identical layout (LazyVStack == eager VStack
-                       // alignment/spacing/header). The content is one inner eager VStack, so the staggered
-                       // section reveal is unchanged; this only defers building that stack until it scrolls in.
+                       // Defer off-screen charts in the inner column as well as the scaffold.
                        onRefresh: { await repo.refresh() },
                        lazy: true,
                        topBackground: liquidScaffoldSky()) {
@@ -305,31 +307,23 @@ struct TrendsView: View {
                 // Reuse the resolved windows until the data, range, or loaded Rest series changes.
                 // An unrelated Repository publication must not re-filter five years of history.
                 let metrics = resolvedMetrics
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
-                    // The main card list ripples in once on appear (Reduce-Motion safe).
+                LazyVStack(alignment: .leading, spacing: NoopMetrics.sectionSpacing) {
+                    // Charts enter directly; lazy scrolling must not schedule staggered layout animations.
                     Group {
                         // Week-in-review digest (#208) with prev/next week browsing (#710) — self-hides
                         // only when NO week in history has data. Past weeks render in the same format.
                         weeklyDigestNav
-                            .staggeredAppear(index: 0)
                         // The Charge / Effort / Rest trio, presented in NOOP's pip language.
                         weekInReview(charge: metrics.recovery, effort: metrics.strain, rest: metrics.rest)
-                            .staggeredAppear(index: 1)
                         rangeBar(recovery: metrics.recovery)
-                            .staggeredAppear(index: 2)
                         heroRecovery(recovery: metrics.recovery)
-                            .staggeredAppear(index: 3)
                         smallMultiples(hrv: metrics.hrv, rhr: metrics.rhr, strain: metrics.strain)
-                            .staggeredAppear(index: 4)
                         // Long-horizon training load (CTL/ATL/TSB). Uses the FULL history, not the
                         // range window — chronic load is inherently a 42-day horizon. Self-hides its
                         // chart behind an honest "needs N more days" state until enough history exists.
                         TrainingLoadCard(days: repo.days)
-                            .staggeredAppear(index: 5)
-                        yearStrip
-                            .staggeredAppear(index: 6)
+                        yearStrip(recoveryDays: metrics.recoveryDays)
                         exportReportRow
-                            .staggeredAppear(index: 7)
                     }
                 }
             }
@@ -772,14 +766,7 @@ struct TrendsView: View {
 
     // MARK: Year heat-strip
 
-    private var yearStrip: some View {
-        // Always show at least a full year for context; expand to all history on ALL.
-        let stripDays = max(range.days ?? repo.days.count, 365)
-        let recent = repo.days.suffix(stripDays)
-        let recoveryDays: [RecoveryDay] = recent.compactMap { d in
-            guard let dt = date(d.day) else { return nil }
-            return RecoveryDay(date: dt, score: d.recovery)
-        }
+    private func yearStrip(recoveryDays: [RecoveryDay]) -> some View {
         let title = (range == .all && repo.days.count > 365) ? String(localized: "Charge (all history)") : String(localized: "Charge (past year)")
         return NoopCard {
             VStack(alignment: .leading, spacing: NoopMetrics.cardInnerSpacing) {

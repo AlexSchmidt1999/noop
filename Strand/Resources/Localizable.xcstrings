@@ -1,6 +1,44 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Start timer": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Start timer"}}, "de": {"stringUnit": {"state": "translated", "value": "Timer starten"}}, "es": {"stringUnit": {"state": "translated", "value": "Iniciar temporizador"}}, "fr": {"stringUnit": {"state": "translated", "value": "Démarrer le minuteur"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Iniciar temporizador"}}, "it": {"stringUnit": {"state": "translated", "value": "Avvia timer"}}, "pl": {"stringUnit": {"state": "translated", "value": "Uruchom minutnik"}}, "ru": {"stringUnit": {"state": "translated", "value": "Запустить таймер"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "启动计时器"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "啟動計時器"}}}},
+    "One buzz on start, one with 30 seconds left, two at the end. Double-tap again to restart.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "One buzz on start, one with 30 seconds left, two at the end. Double-tap again to restart."}}, "de": {"stringUnit": {"state": "translated", "value": "Eine Vibration beim Start, eine 30 Sekunden vor Ende, zwei zum Abschluss. Erneutes Doppeltippen startet den Timer neu."}}, "es": {"stringUnit": {"state": "translated", "value": "Una vibración al iniciar, una cuando queden 30 segundos y dos al terminar. Vuelve a tocar dos veces para reiniciar."}}, "fr": {"stringUnit": {"state": "translated", "value": "Une vibration au démarrage, une à 30 secondes de la fin et deux à la fin. Tapotez à nouveau deux fois pour recommencer."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Uma vibração ao iniciar, uma quando faltarem 30 segundos e duas no fim. Toque duas vezes novamente para reiniciar."}}, "it": {"stringUnit": {"state": "translated", "value": "Una vibrazione all’avvio, una a 30 secondi dalla fine e due alla fine. Tocca di nuovo due volte per ricominciare."}}, "pl": {"stringUnit": {"state": "translated", "value": "Jedna wibracja na początku, jedna 30 sekund przed końcem i dwie na koniec. Ponownie stuknij dwa razy, aby zacząć od nowa."}}, "ru": {"stringUnit": {"state": "translated", "value": "Одна вибрация при запуске, одна за 30 секунд до конца и две по завершении. Для перезапуска снова коснитесь дважды."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "启动时振动一次，剩余30秒时振动一次，结束时振动两次。再次轻点两下可重新开始。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "啟動時震動一次，剩餘30秒時震動一次，結束時震動兩次。再次輕點兩下可重新開始。"}}}},
+    "Keep NOOP running in the background and WHOOP connected. Signals may be delayed if iOS suspends NOOP. This action takes priority over Lift Log.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Keep NOOP running in the background and WHOOP connected. Signals may be delayed if iOS suspends NOOP. This action takes priority over Lift Log."}}, "de": {"stringUnit": {"state": "translated", "value": "NOOP muss im Hintergrund laufen und WHOOP verbunden bleiben. Wenn iOS NOOP anhält, können Signale verspätet eintreffen. Diese Aktion hat Vorrang vor dem Krafttrainingsprotokoll."}}, "es": {"stringUnit": {"state": "translated", "value": "Mantén NOOP en segundo plano y WHOOP conectado. Las señales pueden retrasarse si iOS suspende NOOP. Esta acción tiene prioridad sobre el registro de fuerza."}}, "fr": {"stringUnit": {"state": "translated", "value": "Laissez NOOP fonctionner en arrière-plan et WHOOP connecté. Les signaux peuvent être retardés si iOS suspend NOOP. Cette action est prioritaire sur le journal de musculation."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Mantenha o NOOP em segundo plano e o WHOOP ligado. Os sinais podem atrasar-se se o iOS suspender o NOOP. Esta ação tem prioridade sobre o registo de musculação."}}, "it": {"stringUnit": {"state": "translated", "value": "Mantieni NOOP attivo in background e WHOOP connesso. I segnali possono arrivare in ritardo se iOS sospende NOOP. Questa azione ha la precedenza sul registro di sollevamento."}}, "pl": {"stringUnit": {"state": "translated", "value": "NOOP musi działać w tle, a WHOOP pozostać połączony. Sygnały mogą być opóźnione, jeśli iOS wstrzyma NOOP. Ta czynność ma pierwszeństwo przed dziennikiem treningu siłowego."}}, "ru": {"stringUnit": {"state": "translated", "value": "Оставьте NOOP работающим в фоновом режиме и не отключайте WHOOP. Если iOS приостановит NOOP, сигналы могут задержаться. Это действие имеет приоритет над журналом силовых тренировок."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "请让NOOP在后台运行并保持WHOOP连接。如果iOS暂停NOOP，信号可能延迟。此操作优先于力量训练日志。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "請讓NOOP在背景執行並保持WHOOP連線。如果iOS暫停NOOP，訊號可能延遲。此操作優先於肌力訓練日誌。"}}}},
+    "Connect and fully pair a WHOOP 5.0 to use this timer.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Connect and fully pair a WHOOP 5.0 to use this timer."}}, "de": {"stringUnit": {"state": "translated", "value": "Verbinde und kopple ein WHOOP 5.0 vollständig, um diesen Timer zu nutzen."}}, "es": {"stringUnit": {"state": "translated", "value": "Conecta y vincula completamente un WHOOP 5.0 para usar este temporizador."}}, "fr": {"stringUnit": {"state": "translated", "value": "Connectez et jumelez complètement un WHOOP 5.0 pour utiliser ce minuteur."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Ligue e emparelhe totalmente um WHOOP 5.0 para usar este temporizador."}}, "it": {"stringUnit": {"state": "translated", "value": "Connetti e completa l’abbinamento di un WHOOP 5.0 per usare questo timer."}}, "pl": {"stringUnit": {"state": "translated", "value": "Aby korzystać z minutnika, połącz i w pełni sparuj WHOOP 5.0."}}, "ru": {"stringUnit": {"state": "translated", "value": "Для использования таймера подключите WHOOP 5.0 и завершите сопряжение."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "请连接并完成WHOOP 5.0配对后使用此计时器。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "請連線並完成WHOOP 5.0配對後使用此計時器。"}}}},
+    "Double-tap your WHOOP to start.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Double-tap your WHOOP to start."}}, "de": {"stringUnit": {"state": "translated", "value": "Doppeltippe auf dein WHOOP, um zu starten."}}, "es": {"stringUnit": {"state": "translated", "value": "Toca dos veces tu WHOOP para iniciar."}}, "fr": {"stringUnit": {"state": "translated", "value": "Tapotez deux fois votre WHOOP pour démarrer."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Toque duas vezes no WHOOP para iniciar."}}, "it": {"stringUnit": {"state": "translated", "value": "Tocca due volte il WHOOP per avviare."}}, "pl": {"stringUnit": {"state": "translated", "value": "Stuknij WHOOP dwa razy, aby rozpocząć."}}, "ru": {"stringUnit": {"state": "translated", "value": "Для запуска дважды коснитесь WHOOP."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "轻点WHOOP两下即可启动。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "輕點WHOOP兩下即可啟動。"}}}},
+    "Timer finished": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Timer finished"}}, "de": {"stringUnit": {"state": "translated", "value": "Timer abgelaufen"}}, "es": {"stringUnit": {"state": "translated", "value": "Temporizador finalizado"}}, "fr": {"stringUnit": {"state": "translated", "value": "Minuteur terminé"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Temporizador terminado"}}, "it": {"stringUnit": {"state": "translated", "value": "Timer terminato"}}, "pl": {"stringUnit": {"state": "translated", "value": "Minutnik zakończony"}}, "ru": {"stringUnit": {"state": "translated", "value": "Таймер завершён"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "计时结束"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "計時結束"}}}},
+    "Timer stopped: WHOOP disconnected.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Timer stopped: WHOOP disconnected."}}, "de": {"stringUnit": {"state": "translated", "value": "Timer gestoppt: WHOOP-Verbindung getrennt."}}, "es": {"stringUnit": {"state": "translated", "value": "Temporizador detenido: WHOOP desconectado."}}, "fr": {"stringUnit": {"state": "translated", "value": "Minuteur arrêté : WHOOP déconnecté."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Temporizador parado: WHOOP desligado."}}, "it": {"stringUnit": {"state": "translated", "value": "Timer interrotto: WHOOP disconnesso."}}, "pl": {"stringUnit": {"state": "translated", "value": "Minutnik zatrzymany: WHOOP rozłączony."}}, "ru": {"stringUnit": {"state": "translated", "value": "Таймер остановлен: WHOOP отключён."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "计时已停止：WHOOP已断开连接。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "計時已停止：WHOOP已中斷連線。"}}}},
+    "Training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Training"}}, "de": {"stringUnit": {"state": "translated", "value": "Training"}}, "es": {"stringUnit": {"state": "translated", "value": "Entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Entraînement"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Trening"}}, "ru": {"stringUnit": {"state": "translated", "value": "Тренировка"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "訓練"}}}},
+    "Strength training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Strength training"}}, "de": {"stringUnit": {"state": "translated", "value": "Krafttraining"}}, "es": {"stringUnit": {"state": "translated", "value": "Entrenamiento de fuerza"}}, "fr": {"stringUnit": {"state": "translated", "value": "Musculation"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Treino de força"}}, "it": {"stringUnit": {"state": "translated", "value": "Allenamento di forza"}}, "pl": {"stringUnit": {"state": "translated", "value": "Trening siłowy"}}, "ru": {"stringUnit": {"state": "translated", "value": "Силовая тренировка"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "力量训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "力量訓練"}}}},
+    "Running workout": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Running workout"}}, "de": {"stringUnit": {"state": "translated", "value": "Laufen"}}, "es": {"stringUnit": {"state": "translated", "value": "Carrera"}}, "fr": {"stringUnit": {"state": "translated", "value": "Course à pied"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Corrida"}}, "it": {"stringUnit": {"state": "translated", "value": "Corsa"}}, "pl": {"stringUnit": {"state": "translated", "value": "Bieganie"}}, "ru": {"stringUnit": {"state": "translated", "value": "Бег"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "跑步"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "跑步"}}}},
+    "Control training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Control training"}}, "de": {"stringUnit": {"state": "translated", "value": "Training steuern"}}, "es": {"stringUnit": {"state": "translated", "value": "Controlar entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Contrôler la séance"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Controlar treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Controlla allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Steruj treningiem"}}, "ru": {"stringUnit": {"state": "translated", "value": "Управление тренировкой"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "控制训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "控制訓練"}}}},
+    "Training favorite": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Training favorite"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainingsfavorit"}}, "es": {"stringUnit": {"state": "translated", "value": "Entrenamiento favorito"}}, "fr": {"stringUnit": {"state": "translated", "value": "Séance favorite"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Treino favorito"}}, "it": {"stringUnit": {"state": "translated", "value": "Allenamento preferito"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony trening"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранная тренировка"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "训练收藏"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "訓練收藏"}}}},
+    "Training favorites": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Training favorites"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainingsfavoriten"}}, "es": {"stringUnit": {"state": "translated", "value": "Entrenamientos favoritos"}}, "fr": {"stringUnit": {"state": "translated", "value": "Séances favorites"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Treinos favoritos"}}, "it": {"stringUnit": {"state": "translated", "value": "Allenamenti preferiti"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubione treningi"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранные тренировки"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "训练收藏"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "訓練收藏"}}}},
+    "Favorite": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite"}}, "de": {"stringUnit": {"state": "translated", "value": "Favorit"}}, "es": {"stringUnit": {"state": "translated", "value": "Favorito"}}, "fr": {"stringUnit": {"state": "translated", "value": "Favori"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Favorito"}}, "it": {"stringUnit": {"state": "translated", "value": "Preferito"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранное"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏"}}}},
+    "Favorite 1": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite 1"}}, "de": {"stringUnit": {"state": "translated", "value": "Favorit 1"}}, "es": {"stringUnit": {"state": "translated", "value": "Favorito 1"}}, "fr": {"stringUnit": {"state": "translated", "value": "Favori 1"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Favorito 1"}}, "it": {"stringUnit": {"state": "translated", "value": "Preferito 1"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony 1"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранное 1"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏 1"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏 1"}}}},
+    "Favorite 2": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite 2"}}, "de": {"stringUnit": {"state": "translated", "value": "Favorit 2"}}, "es": {"stringUnit": {"state": "translated", "value": "Favorito 2"}}, "fr": {"stringUnit": {"state": "translated", "value": "Favori 2"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Favorito 2"}}, "it": {"stringUnit": {"state": "translated", "value": "Preferito 2"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony 2"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранное 2"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏 2"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏 2"}}}},
+    "Favorite 3": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite 3"}}, "de": {"stringUnit": {"state": "translated", "value": "Favorit 3"}}, "es": {"stringUnit": {"state": "translated", "value": "Favorito 3"}}, "fr": {"stringUnit": {"state": "translated", "value": "Favori 3"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Favorito 3"}}, "it": {"stringUnit": {"state": "translated", "value": "Preferito 3"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony 3"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранное 3"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏 3"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏 3"}}}},
+    "Favorite %lld": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite %lld"}}, "de": {"stringUnit": {"state": "translated", "value": "Favorit %lld"}}, "es": {"stringUnit": {"state": "translated", "value": "Favorito %lld"}}, "fr": {"stringUnit": {"state": "translated", "value": "Favori %lld"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Favorito %lld"}}, "it": {"stringUnit": {"state": "translated", "value": "Preferito %lld"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ulubiony %lld"}}, "ru": {"stringUnit": {"state": "translated", "value": "Избранное %lld"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏 %lld"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏 %lld"}}}},
+    "Favorite name": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Favorite name"}}, "de": {"stringUnit": {"state": "translated", "value": "Name des Favoriten"}}, "es": {"stringUnit": {"state": "translated", "value": "Nombre del favorito"}}, "fr": {"stringUnit": {"state": "translated", "value": "Nom du favori"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Nome do favorito"}}, "it": {"stringUnit": {"state": "translated", "value": "Nome del preferito"}}, "pl": {"stringUnit": {"state": "translated", "value": "Nazwa ulubionego"}}, "ru": {"stringUnit": {"state": "translated", "value": "Название избранного"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收藏名称"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收藏名稱"}}}},
+    "Action": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Action"}}, "de": {"stringUnit": {"state": "translated", "value": "Aktion"}}, "es": {"stringUnit": {"state": "translated", "value": "Acción"}}, "fr": {"stringUnit": {"state": "translated", "value": "Action"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Ação"}}, "it": {"stringUnit": {"state": "translated", "value": "Azione"}}, "pl": {"stringUnit": {"state": "translated", "value": "Działanie"}}, "ru": {"stringUnit": {"state": "translated", "value": "Действие"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "操作"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "操作"}}}},
+    "Confirmation": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Confirmation"}}, "de": {"stringUnit": {"state": "translated", "value": "Bestätigung"}}, "es": {"stringUnit": {"state": "translated", "value": "Confirmación"}}, "fr": {"stringUnit": {"state": "translated", "value": "Confirmation"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Confirmação"}}, "it": {"stringUnit": {"state": "translated", "value": "Conferma"}}, "pl": {"stringUnit": {"state": "translated", "value": "Potwierdzenie"}}, "ru": {"stringUnit": {"state": "translated", "value": "Подтверждение"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "确认"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "確認"}}}},
+    "End training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "End training"}}, "de": {"stringUnit": {"state": "translated", "value": "Training beenden"}}, "es": {"stringUnit": {"state": "translated", "value": "Finalizar entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Terminer la séance"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Terminar treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Termina allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Zakończ trening"}}, "ru": {"stringUnit": {"state": "translated", "value": "Завершить тренировку"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "结束训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "結束訓練"}}}},
+    "Really end training?": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Really end training?"}}, "de": {"stringUnit": {"state": "translated", "value": "Training wirklich beenden?"}}, "es": {"stringUnit": {"state": "translated", "value": "¿Finalizar el entrenamiento?"}}, "fr": {"stringUnit": {"state": "translated", "value": "Terminer vraiment la séance ?"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Terminar mesmo o treino?"}}, "it": {"stringUnit": {"state": "translated", "value": "Terminare davvero l’allenamento?"}}, "pl": {"stringUnit": {"state": "translated", "value": "Na pewno zakończyć trening?"}}, "ru": {"stringUnit": {"state": "translated", "value": "Завершить тренировку?"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "确定结束训练？"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "確定結束訓練？"}}}},
+    "Yes, end training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Yes, end training"}}, "de": {"stringUnit": {"state": "translated", "value": "Ja, Training beenden"}}, "es": {"stringUnit": {"state": "translated", "value": "Sí, finalizar"}}, "fr": {"stringUnit": {"state": "translated", "value": "Oui, terminer"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Sim, terminar"}}, "it": {"stringUnit": {"state": "translated", "value": "Sì, termina"}}, "pl": {"stringUnit": {"state": "translated", "value": "Tak, zakończ"}}, "ru": {"stringUnit": {"state": "translated", "value": "Да, завершить"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "是，结束训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "是，結束訓練"}}}},
+    "Only completed sets will be saved.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Only completed sets will be saved."}}, "de": {"stringUnit": {"state": "translated", "value": "Nur absolvierte Sätze werden gespeichert."}}, "es": {"stringUnit": {"state": "translated", "value": "Solo se guardarán las series realizadas."}}, "fr": {"stringUnit": {"state": "translated", "value": "Seules les séries effectuées seront enregistrées."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Só serão guardadas as séries concluídas."}}, "it": {"stringUnit": {"state": "translated", "value": "Verranno salvate solo le serie completate."}}, "pl": {"stringUnit": {"state": "translated", "value": "Zapisane zostaną tylko wykonane serie."}}, "ru": {"stringUnit": {"state": "translated", "value": "Сохранятся только выполненные подходы."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "仅保存已完成的组。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "僅儲存已完成的組。"}}}},
+    "Configure training favorites in NOOP": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Configure training favorites in NOOP"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainingsfavoriten in NOOP einrichten"}}, "es": {"stringUnit": {"state": "translated", "value": "Configura favoritos en NOOP"}}, "fr": {"stringUnit": {"state": "translated", "value": "Configurer les favoris dans NOOP"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Configurar favoritos no NOOP"}}, "it": {"stringUnit": {"state": "translated", "value": "Configura i preferiti in NOOP"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ustaw ulubione treningi w NOOP"}}, "ru": {"stringUnit": {"state": "translated", "value": "Настройте избранное в NOOP"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "在 NOOP 中设置训练收藏"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "在 NOOP 中設定訓練收藏"}}}},
+    "Open NOOP to configure training": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Open NOOP to configure training"}}, "de": {"stringUnit": {"state": "translated", "value": "NOOP zum Einrichten öffnen"}}, "es": {"stringUnit": {"state": "translated", "value": "Abre NOOP para configurar el entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Ouvrir NOOP pour configurer la séance"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Abrir NOOP para configurar o treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Apri NOOP per configurare l’allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Otwórz NOOP, aby ustawić trening"}}, "ru": {"stringUnit": {"state": "translated", "value": "Откройте NOOP для настройки тренировки"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "打开 NOOP 设置训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "開啟 NOOP 設定訓練"}}}},
+    "Training could not be saved": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Training could not be saved"}}, "de": {"stringUnit": {"state": "translated", "value": "Training konnte nicht gespeichert werden"}}, "es": {"stringUnit": {"state": "translated", "value": "No se pudo guardar el entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Impossible d’enregistrer la séance"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Não foi possível guardar o treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Impossibile salvare l’allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Nie udało się zapisać treningu"}}, "ru": {"stringUnit": {"state": "translated", "value": "Не удалось сохранить тренировку"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "无法保存训练"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "無法儲存訓練"}}}},
+    "Your paused training is still available. Please try again.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Your paused training is still available. Please try again."}}, "de": {"stringUnit": {"state": "translated", "value": "Dein pausiertes Training bleibt erhalten. Bitte versuche es erneut."}}, "es": {"stringUnit": {"state": "translated", "value": "Tu entrenamiento pausado sigue disponible. Vuelve a intentarlo."}}, "fr": {"stringUnit": {"state": "translated", "value": "Votre séance en pause est conservée. Réessayez."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "O treino em pausa continua disponível. Tente novamente."}}, "it": {"stringUnit": {"state": "translated", "value": "L’allenamento in pausa è conservato. Riprova."}}, "pl": {"stringUnit": {"state": "translated", "value": "Wstrzymany trening jest zachowany. Spróbuj ponownie."}}, "ru": {"stringUnit": {"state": "translated", "value": "Тренировка на паузе сохранена. Повторите попытку."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "已暂停的训练仍然保留。请重试。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "已暫停的訓練仍然保留。請重試。"}}}},
+    "Still training?": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Still training?"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainierst du noch?"}}, "es": {"stringUnit": {"state": "translated", "value": "¿Sigues entrenando?"}}, "fr": {"stringUnit": {"state": "translated", "value": "Vous vous entraînez encore ?"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Ainda está a treinar?"}}, "it": {"stringUnit": {"state": "translated", "value": "Ti stai ancora allenando?"}}, "pl": {"stringUnit": {"state": "translated", "value": "Nadal trenujesz?"}}, "ru": {"stringUnit": {"state": "translated", "value": "Вы ещё тренируетесь?"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "还在训练吗？"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "還在訓練嗎？"}}}},
+    "No live heart rate for ten minutes. Check your training or resume it.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "No live heart rate for ten minutes. Check your training or resume it."}}, "de": {"stringUnit": {"state": "translated", "value": "Seit zehn Minuten kein Live-Puls. Prüfe dein Training oder setze es fort."}}, "es": {"stringUnit": {"state": "translated", "value": "Sin pulso en directo durante diez minutos. Revisa o reanuda tu entrenamiento."}}, "fr": {"stringUnit": {"state": "translated", "value": "Aucun pouls en direct depuis dix minutes. Vérifiez ou reprenez votre séance."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Sem pulso em direto há dez minutos. Verifique ou retome o treino."}}, "it": {"stringUnit": {"state": "translated", "value": "Nessun battito in tempo reale da dieci minuti. Controlla o riprendi l’allenamento."}}, "pl": {"stringUnit": {"state": "translated", "value": "Brak bieżącego tętna od dziesięciu minut. Sprawdź lub wznów trening."}}, "ru": {"stringUnit": {"state": "translated", "value": "Нет текущих измерений пульса десять минут. Проверьте или продолжите тренировку."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "十分钟未收到实时心率。请检查或继续训练。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "十分鐘未收到即時心率。請檢查或繼續訓練。"}}}},
+    "Choose three workouts or Lift Log programs for your widgets.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Choose three workouts or Lift Log programs for your widgets."}}, "de": {"stringUnit": {"state": "translated", "value": "Wähle drei Sportarten oder Lift-Log-Programme für deine Widgets."}}, "es": {"stringUnit": {"state": "translated", "value": "Elige tres actividades o programas de Lift Log para tus widgets."}}, "fr": {"stringUnit": {"state": "translated", "value": "Choisissez trois activités ou programmes Lift Log pour vos widgets."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Escolha três atividades ou programas Lift Log para os widgets."}}, "it": {"stringUnit": {"state": "translated", "value": "Scegli tre attività o programmi Lift Log per i widget."}}, "pl": {"stringUnit": {"state": "translated", "value": "Wybierz trzy aktywności lub programy Lift Log dla widżetów."}}, "ru": {"stringUnit": {"state": "translated", "value": "Выберите три вида тренировки или программы Lift Log для виджетов."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "为小组件选择三种运动或 Lift Log 计划。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "為小工具選擇三種運動或 Lift Log 計畫。"}}}},
+    "Unassigned": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Unassigned"}}, "de": {"stringUnit": {"state": "translated", "value": "Nicht belegt"}}, "es": {"stringUnit": {"state": "translated", "value": "Sin asignar"}}, "fr": {"stringUnit": {"state": "translated", "value": "Non attribué"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Não atribuído"}}, "it": {"stringUnit": {"state": "translated", "value": "Non assegnato"}}, "pl": {"stringUnit": {"state": "translated", "value": "Nieprzypisany"}}, "ru": {"stringUnit": {"state": "translated", "value": "Не назначено"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "未分配"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "未指派"}}}},
+    "Program unavailable": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Program unavailable"}}, "de": {"stringUnit": {"state": "translated", "value": "Programm nicht verfügbar"}}, "es": {"stringUnit": {"state": "translated", "value": "Programa no disponible"}}, "fr": {"stringUnit": {"state": "translated", "value": "Programme indisponible"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Programa indisponível"}}, "it": {"stringUnit": {"state": "translated", "value": "Programma non disponibile"}}, "pl": {"stringUnit": {"state": "translated", "value": "Program niedostępny"}}, "ru": {"stringUnit": {"state": "translated", "value": "Программа недоступна"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "计划不可用"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "計畫無法使用"}}}},
+    "Enable training reminders": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Enable training reminders"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainingsmitteilungen erlauben"}}, "es": {"stringUnit": {"state": "translated", "value": "Permitir avisos de entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Autoriser les rappels de séance"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Permitir lembretes de treino"}}, "it": {"stringUnit": {"state": "translated", "value": "Consenti promemoria di allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Włącz przypomnienia treningowe"}}, "ru": {"stringUnit": {"state": "translated", "value": "Разрешить напоминания о тренировке"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "允许训练提醒"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "允許訓練提醒"}}}},
+    "After the first live pulse, ten minutes without new measurements pauses training while the sensor is connected. Training continues when the sensor disconnects.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "After the first live pulse, ten minutes without new measurements pauses training while the sensor is connected. Training continues when the sensor disconnects."}}, "de": {"stringUnit": {"state": "translated", "value": "Nach dem ersten Live-Puls pausiert das Training nach zehn Minuten ohne neue Messung, solange der Sensor verbunden ist. Bei getrennter Verbindung läuft das Training weiter."}}, "es": {"stringUnit": {"state": "translated", "value": "Después del primer pulso en directo, diez minutos sin nuevas mediciones pausan el entrenamiento mientras el sensor esté conectado. El entrenamiento continúa si el sensor se desconecta."}}, "fr": {"stringUnit": {"state": "translated", "value": "Après le premier pouls en direct, dix minutes sans nouvelle mesure mettent la séance en pause tant que le capteur est connecté. La séance continue si le capteur se déconnecte."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Após o primeiro pulso em direto, dez minutos sem novas medições colocam o treino em pausa enquanto o sensor estiver ligado. O treino continua se o sensor se desligar."}}, "it": {"stringUnit": {"state": "translated", "value": "Dopo il primo battito in tempo reale, dieci minuti senza nuove misurazioni mettono in pausa l’allenamento mentre il sensore è connesso. L’allenamento continua se il sensore si disconnette."}}, "pl": {"stringUnit": {"state": "translated", "value": "Po pierwszym bieżącym pomiarze tętna dziesięć minut bez nowych pomiarów wstrzymuje trening, gdy czujnik jest połączony. Trening trwa dalej po rozłączeniu czujnika."}}, "ru": {"stringUnit": {"state": "translated", "value": "После первого текущего измерения пульса десять минут без новых измерений ставят тренировку на паузу, пока датчик подключён. При отключении датчика тренировка продолжается."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "收到首次实时心率后，传感器保持连接时，十分钟无新测量会暂停训练。传感器断开连接后，训练继续。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "收到首次即時心率後，感測器保持連線時，十分鐘無新測量會暫停訓練。感測器斷開連線後，訓練繼續。"}}}},
+    "Control a running workout from the Lock Screen.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Control a running workout from the Lock Screen."}}, "de": {"stringUnit": {"state": "translated", "value": "Steuere ein laufendes Training vom Sperrbildschirm."}}, "es": {"stringUnit": {"state": "translated", "value": "Controla un entrenamiento desde la pantalla bloqueada."}}, "fr": {"stringUnit": {"state": "translated", "value": "Contrôlez une séance depuis l’écran verrouillé."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Controle um treino no ecrã bloqueado."}}, "it": {"stringUnit": {"state": "translated", "value": "Controlla l’allenamento dalla schermata di blocco."}}, "pl": {"stringUnit": {"state": "translated", "value": "Steruj trwającym treningiem z ekranu blokady."}}, "ru": {"stringUnit": {"state": "translated", "value": "Управляйте тренировкой с экрана блокировки."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "在锁屏上控制正在进行的训练。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "在鎖定畫面上控制正在進行的訓練。"}}}},
+    "Start a favorite or control your running training.": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Start a favorite or control your running training."}}, "de": {"stringUnit": {"state": "translated", "value": "Starte einen Favoriten oder steuere dein laufendes Training."}}, "es": {"stringUnit": {"state": "translated", "value": "Inicia un favorito o controla tu entrenamiento."}}, "fr": {"stringUnit": {"state": "translated", "value": "Démarrez un favori ou contrôlez votre séance."}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Inicie um favorito ou controle o treino em curso."}}, "it": {"stringUnit": {"state": "translated", "value": "Avvia un preferito o controlla l’allenamento in corso."}}, "pl": {"stringUnit": {"state": "translated", "value": "Uruchom ulubiony trening lub steruj trwającym."}}, "ru": {"stringUnit": {"state": "translated", "value": "Запустите избранную тренировку или управляйте текущей."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "开始收藏的训练或控制正在进行的训练。"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "開始收藏的訓練或控制正在進行的訓練。"}}}},
     "Move, relative to tonight": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Move, relative to tonight"}}, "de": {"stringUnit": {"state": "translated", "value": "Bewegung, relativ zu dieser Nacht"}}, "es": {"stringUnit": {"state": "translated", "value": "Movimiento, en relación con esta noche"}}, "fr": {"stringUnit": {"state": "translated", "value": "Mouvement, par rapport à cette nuit"}}, "it": {"stringUnit": {"state": "translated", "value": "Movimento, rispetto a questa notte"}}, "pl": {"stringUnit": {"state": "translated", "value": "Ruch, w odniesieniu do tej nocy"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Movimento, em relação a esta noite"}}, "ru": {"stringUnit": {"state": "translated", "value": "Движение, относительно этой ночи"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "活动，相对于今晚"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "活動，相對於今晚"}}}},
     "Route and GPS distance, without the heart-rate and calorie summary": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Route and GPS distance, without the heart-rate and calorie summary"}}, "de": {"stringUnit": {"state": "translated", "value": "Route und GPS-Distanz, ohne die Herzfrequenz- und Kalorienübersicht"}}, "es": {"stringUnit": {"state": "translated", "value": "Ruta y distancia GPS, sin el resumen de frecuencia cardiaca y calorías"}}, "fr": {"stringUnit": {"state": "translated", "value": "Itinéraire et distance GPS, sans le récapitulatif de fréquence cardiaque et de calories"}}, "it": {"stringUnit": {"state": "translated", "value": "Percorso e distanza GPS, senza il riepilogo di frequenza cardiaca e calorie"}}, "pl": {"stringUnit": {"state": "translated", "value": "Trasa i dystans GPS, bez podsumowania tętna i kalorii"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Rota e distância GPS, sem o resumo de frequência cardíaca e calorias"}}, "ru": {"stringUnit": {"state": "translated", "value": "Маршрут и GPS-дистанция, без сводки пульса и калорий"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "路线和 GPS 距离，不含心率和卡路里摘要"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "路線和 GPS 距離，不含心率和卡路里摘要"}}}},
     "Export Workout Route": {"localizations": {"en": {"stringUnit": {"state": "translated", "value": "Export Workout Route"}}, "de": {"stringUnit": {"state": "translated", "value": "Trainingsroute exportieren"}}, "es": {"stringUnit": {"state": "translated", "value": "Exportar ruta del entrenamiento"}}, "fr": {"stringUnit": {"state": "translated", "value": "Exporter l’itinéraire de la séance"}}, "it": {"stringUnit": {"state": "translated", "value": "Esporta il percorso dell’allenamento"}}, "pl": {"stringUnit": {"state": "translated", "value": "Eksportuj trasę treningu"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Exportar rota do treino"}}, "ru": {"stringUnit": {"state": "translated", "value": "Экспортировать маршрут тренировки"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "导出运动路线"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "匯出運動路線"}}}},
@@ -567,6 +605,122 @@
           "stringUnit": {
             "state": "translated",
             "value": "NOOP łączy się z paskiem i zsynchronizuje go, gdy tylko będzie gotowy."
+          }
+        }
+      }
+    },
+    "No heart rate stored for today yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für heute sind noch keine Herzfrequenzdaten gespeichert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay frecuencia cardíaca guardada para hoy"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune fréquence cardiaque enregistrée pour aujourd’hui"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per oggi non è ancora salvata alcuna frequenza cardiaca"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na dziś nie zapisano jeszcze tętna"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda sem frequência cardíaca guardada para hoje"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "За сегодня пульс ещё не сохранён"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天尚未保存心率数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天尚未儲存心率資料"
+          }
+        }
+      }
+    },
+    "One five-minute block of heart rate today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Fünf-Minuten-Block der Herzfrequenz heute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un bloque de cinco minutos de frecuencia cardíaca hoy"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un bloc de cinq minutes de fréquence cardiaque aujourd’hui"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un blocco di cinque minuti di frequenza cardiaca oggi"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeden pięciominutowy blok tętna dzisiaj"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um bloco de cinco minutos de frequência cardíaca hoje"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Один пятиминутный блок пульса за сегодня"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天有一个五分钟的心率数据块"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天有一個五分鐘的心率資料塊"
           }
         }
       }
@@ -1939,6 +2093,122 @@
     "Working sets": { "localizations": {
       "de": {"stringUnit": {"state": "translated", "value": "Arbeitssätze"}}, "es": {"stringUnit": {"state": "translated", "value": "Series efectivas"}}, "fr": {"stringUnit": {"state": "translated", "value": "Séries de travail"}}, "it": {"stringUnit": {"state": "translated", "value": "Serie di lavoro"}}, "pl": {"stringUnit": {"state": "translated", "value": "Serie robocze"}}, "pt-PT": {"stringUnit": {"state": "translated", "value": "Séries de trabalho"}}, "ru": {"stringUnit": {"state": "translated", "value": "Рабочие подходы"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "正式组"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "正式組"}}
     } },
+    "The curve draws once the strap offloads, or once an import brings one in.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kurve wird gezeichnet, sobald der Strap überträgt oder ein Import welche mitbringt."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La curva se dibujará cuando la pulsera transfiera los datos o cuando una importación los traiga."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La courbe se trace dès que le bracelet transfère ses données ou qu’un import en apporte."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La curva viene tracciata quando la fascia scarica i dati o quando li porta un’importazione."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wykres pojawi się, gdy opaska prześle dane lub przyniesie je import."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A curva é desenhada quando a pulseira transferir os dados ou quando uma importação os trouxer."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кривая появится, когда браслет выгрузит данные или их принесёт импорт."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手环传输数据或导入带入数据后，曲线就会绘制。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手環傳輸資料或匯入帶入資料後，曲線就會繪製。"
+          }
+        }
+      }
+    },
+    "The curve needs two of them to draw a line.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für eine Linie braucht die Kurve zwei davon."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La curva necesita dos para trazar una línea."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il en faut deux pour tracer une ligne."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per tracciare una linea ne servono due."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do narysowania linii potrzebne są dwa."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A curva precisa de dois para traçar uma linha."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы провести линию, нужно два."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "绘制曲线需要两个。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繪製曲線需要兩個。"
+          }
+        }
+      }
+    },
     "While the strap is connected.": {
       "localizations": {
         "de": {
@@ -38631,6 +38901,64 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alerty dotyczące baterii"
+          }
+        }
+      }
+    },
+    "Battery pack %.1f%%": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akkupack %.1f%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batería externa %.1f%%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batterie externe %.1f %%"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pacco batteria %.1f%%"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bateria externa %.1f%%"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moduł baterii %.1f%%"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумуляторный блок %.1f%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电池包 %.1f%%"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "電池包 %.1f%%"
           }
         }
       }
